@@ -167,56 +167,78 @@ async function regenerateVideos() {
   ];
 
   const status = document.getElementById('status');
+  let successCount = 0;
+  let skipCount = 0;
 
   for(let i = 0; i < VIDEO_ACTIONS.length; i++) {
     const action = VIDEO_ACTIONS[i];
-    status.textContent = `🎬 Generating video ${i+1}/10: ${action.name}...`;
 
-    try {
-      const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/veo-2.0-generate-001:predictLongRunning', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json','x-goog-api-key': GOOGLE_API_KEY},
-        body: JSON.stringify({
-          instances: [{
-            prompt: `A cute capybara ${action.prompt}, short video, looping, fun animation`,
-            image: {bytesBase64Encoded: b64, mimeType: 'image/png'}
-          }],
-          parameters: {aspectRatio:'9:16', durationSeconds: 5}
-        })
-      });
-      const opData = await resp.json();
-      if(!opData.name) {
-        status.textContent = `❌ Video ${i+1} failed: ${opData.error?.message || 'no operation'}`;
-        continue;
-      }
+    // Skip if already exists
+    const existing = await getMedia(`capyVideo_${i}`);
+    if(existing) {
+      skipCount++;
+      status.textContent = `⏭️ Video ${i+1}/10: ${action.name} already exists, skipping...`;
+      continue;
+    }
 
-      // Poll
-      for(let attempt = 0; attempt < 60; attempt++) {
-        await new Promise(r => setTimeout(r, 5000));
-        status.textContent = `🎬 Video ${i+1}/10: ${action.name} (polling ${attempt+1})...`;
-        const pollResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/${opData.name}`, {
-          headers: {'x-goog-api-key': GOOGLE_API_KEY}
+    // Retry up to 3 times on rate limit
+    let generated = false;
+    for(let retry = 0; retry < 3 && !generated; retry++) {
+      status.textContent = `🎬 Video ${i+1}/10: ${action.name}${retry ? ` (retry ${retry})` : ''}...`;
+
+      try {
+        const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/veo-2.0-generate-001:predictLongRunning', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json','x-goog-api-key': GOOGLE_API_KEY},
+          body: JSON.stringify({
+            instances: [{
+              prompt: `A cute capybara ${action.prompt}, short video, looping, fun animation`,
+              image: {bytesBase64Encoded: b64, mimeType: 'image/png'}
+            }],
+            parameters: {aspectRatio:'9:16', durationSeconds: 5}
+          })
         });
-        const pollData = await pollResp.json();
-        if(pollData.done) {
-          const videoUri = pollData.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri || pollData.response?.generatedSamples?.[0]?.video?.uri;
-          if(videoUri) {
-            const videoResp = await fetch(`${videoUri}&key=${GOOGLE_API_KEY}`);
-            const videoBlob = await videoResp.blob();
-            await saveMedia(`capyVideo_${i}`, videoBlob);
-            status.textContent = `✅ Video ${i+1}/10: ${action.name} saved!`;
-          } else {
-            status.textContent = `❌ Video ${i+1}: no URI in response`;
+        const opData = await resp.json();
+        if(!opData.name) {
+          if(opData.error?.code === 429) {
+            status.textContent = `⏳ Video ${i+1}: rate limited, waiting 45s...`;
+            await new Promise(r => setTimeout(r, 45000));
+            continue;
           }
+          status.textContent = `❌ Video ${i+1} failed: ${opData.error?.message || 'no operation'}`;
           break;
         }
+
+        // Poll
+        for(let attempt = 0; attempt < 60; attempt++) {
+          await new Promise(r => setTimeout(r, 5000));
+          status.textContent = `🎬 Video ${i+1}/10: ${action.name} (polling ${attempt+1})...`;
+          const pollResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/${opData.name}`, {
+            headers: {'x-goog-api-key': GOOGLE_API_KEY}
+          });
+          const pollData = await pollResp.json();
+          if(pollData.done) {
+            const videoUri = pollData.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri || pollData.response?.generatedSamples?.[0]?.video?.uri;
+            if(videoUri) {
+              const videoResp = await fetch(`${videoUri}&key=${GOOGLE_API_KEY}`);
+              const videoBlob = await videoResp.blob();
+              await saveMedia(`capyVideo_${i}`, videoBlob);
+              status.textContent = `✅ Video ${i+1}/10: ${action.name} saved! (${(videoBlob.size/1024/1024).toFixed(1)} MB)`;
+              successCount++;
+              generated = true;
+            } else {
+              status.textContent = `❌ Video ${i+1}: no URI in response`;
+            }
+            break;
+          }
+        }
+      } catch(err) {
+        status.textContent = `❌ Video ${i+1} error: ${err.message}`;
       }
-    } catch(err) {
-      status.textContent = `❌ Video ${i+1} error: ${err.message}`;
     }
   }
 
-  status.textContent = '🎉 Done! Refreshing...';
+  status.textContent = `🎉 Done! ${successCount} new + ${skipCount} existing. Refreshing...`;
   setTimeout(loadAll, 1000);
 }
 
