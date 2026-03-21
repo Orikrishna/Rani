@@ -1,0 +1,1877 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>משחק לוח הכפל</title>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<style>
+/* ===== CSS VARIABLES & PALETTES ===== */
+:root {
+  --bg: #FFF0F5;
+  --card: #FFFFFF;
+  --primary: #FFB6C1;
+  --secondary: #DDA0DD;
+  --accent: #87CEEB;
+  --text: #5D4E6D;
+  --text-light: #8B7DA8;
+  --success: #98D8A0;
+  --error: #FFB3B3;
+  --gold: #FFD700;
+  --shadow: rgba(0,0,0,0.08);
+  --radius: 16px;
+}
+.palette-rose { --bg:#FFF0F5;--primary:#FFB6C1;--secondary:#DDA0DD;--accent:#87CEEB;--card:#FFF; }
+.palette-mint { --bg:#F0FFF4;--primary:#98D8A0;--secondary:#87CEEB;--accent:#DDA0DD;--card:#FFF; }
+.palette-lavender { --bg:#F5F0FF;--primary:#C9B1FF;--secondary:#FFB6C1;--accent:#98D8A0;--card:#FFF; }
+.palette-sunset { --bg:#FFF8F0;--primary:#FFCBA4;--secondary:#FFB6C1;--accent:#87CEEB;--card:#FFF; }
+
+* { margin:0;padding:0;box-sizing:border-box; }
+body { font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background 0.5s;overflow-x:hidden; }
+
+.screen { display:none;max-width:650px;margin:0 auto;padding:20px;animation:fadeIn 0.4s ease; }
+.screen.active { display:block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+h1 { font-size:2em;text-align:center;margin-bottom:10px;color:#7B1FA2; }
+h2 { font-size:1.5em;text-align:center;margin-bottom:15px;color:#C2185B; }
+
+.card { background:var(--card);border-radius:var(--radius);padding:24px;margin:16px 0;box-shadow:0 4px 15px var(--shadow); }
+
+.btn { display:inline-block;padding:14px 32px;border:none;border-radius:50px;font-size:1.1em;font-weight:bold;cursor:pointer;transition:all 0.3s;font-family:inherit;color:var(--text); }
+.btn:hover { transform:translateY(-2px);box-shadow:0 6px 20px var(--shadow); }
+.btn:active { transform:translateY(0); }
+.btn-primary { background:var(--primary); }
+.btn-secondary { background:var(--secondary); }
+.btn-accent { background:var(--accent); }
+.btn-back { background:var(--card);padding:10px 20px;font-size:0.9em;margin-bottom:10px;border:2px solid var(--primary); }
+.btn-next { margin-top:16px;font-size:1.2em;padding:14px 40px;background:linear-gradient(135deg,var(--primary),var(--secondary));color:var(--text);animation:pulse 1.5s infinite; }
+
+input[type="text"],input[type="number"] { width:100%;padding:14px;border:2px solid var(--primary);border-radius:var(--radius);font-size:1.1em;font-family:inherit;text-align:center;outline:none;transition:border-color 0.3s; }
+input:focus { border-color:var(--secondary); }
+
+/* ===== CAPYBARA ===== */
+.capybara-container { display:flex;flex-direction:column;align-items:center;margin:20px 0;position:relative; }
+.capybara { width:160px;height:140px;position:relative;transition:transform 0.3s; }
+.capy-body { width:120px;height:80px;background:#C4956A;border-radius:60px 60px 40px 40px;position:absolute;bottom:0;left:20px; }
+.capy-head { width:70px;height:60px;background:#C4956A;border-radius:35px 35px 25px 25px;position:absolute;top:5px;left:45px;z-index:2; }
+.capy-snout { width:40px;height:25px;background:#D4A574;border-radius:20px;position:absolute;bottom:2px;left:15px; }
+.capy-nose { width:12px;height:8px;background:#4A3728;border-radius:6px;position:absolute;top:2px;left:14px; }
+.capy-eye { width:10px;height:12px;background:#2C1810;border-radius:50%;position:absolute;top:18px; }
+.capy-eye.left { left:15px; } .capy-eye.right { right:15px; }
+.capy-eye-shine { width:4px;height:4px;background:white;border-radius:50%;position:absolute;top:2px;right:2px; }
+.capy-ear { width:16px;height:12px;background:#B08050;border-radius:50% 50% 0 0;position:absolute;top:0; }
+.capy-ear.left { left:8px;transform:rotate(-15deg); } .capy-ear.right { right:8px;transform:rotate(15deg); }
+.capy-legs { position:absolute;bottom:-10px;left:20px;width:120px;display:flex;justify-content:space-between;padding:0 10px; }
+.capy-leg { width:20px;height:15px;background:#B08050;border-radius:0 0 10px 10px; }
+.capy-smile { width:20px;height:10px;border:2px solid #4A3728;border-top:none;border-radius:0 0 10px 10px;position:absolute;bottom:10px;left:25px; }
+.capy-tear { width:6px;height:10px;background:#87CEEB;border-radius:0 0 50% 50%;position:absolute;top:32px;left:18px;opacity:0;transition:opacity 0.3s; }
+
+.capy-accessory { position:absolute;font-size:28px;z-index:10;display:none; }
+.accessory-hat { top:-15px;left:55px; }
+.accessory-glasses { top:20px;left:52px;font-size:22px; }
+.accessory-ribbon { top:-5px;left:35px; }
+.accessory-flower { top:0px;right:25px; }
+.accessory-rainbow { top:-25px;left:40px;font-size:32px; }
+.accessory-butterfly { top:-10px;right:15px; }
+.accessory-crown { top:-22px;left:52px;font-size:30px; }
+.accessory-music { bottom:30px;right:0px;font-size:20px; }
+.capy-name { font-size:1.2em;font-weight:bold;color:var(--text);margin-top:15px; }
+
+@keyframes breakdance { 0%{transform:rotate(0) scale(1)} 15%{transform:rotate(-15deg) scale(1.1) translateY(-10px)} 30%{transform:rotate(15deg) scale(1.05)} 45%{transform:rotate(-10deg) translateY(-15px) scale(1.1)} 55%{transform:rotate(180deg) scale(.9)} 70%{transform:rotate(360deg) scale(1.1) translateY(-10px)} 85%{transform:rotate(350deg) scale(1.05)} 100%{transform:rotate(360deg) scale(1)} }
+@keyframes sad { 0%{transform:translateY(0)} 100%{transform:translateY(5px) rotate(-5deg)} }
+@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+@keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
+@keyframes float0 { 0%{transform:translate(0,0)} 25%{transform:translate(40px,-50px)} 50%{transform:translate(-30px,-80px)} 75%{transform:translate(-50px,-20px)} 100%{transform:translate(0,0)} }
+@keyframes float1 { 0%{transform:translate(0,0)} 25%{transform:translate(-50px,30px)} 50%{transform:translate(40px,-40px)} 75%{transform:translate(20px,50px)} 100%{transform:translate(0,0)} }
+@keyframes float2 { 0%{transform:translate(0,0)} 25%{transform:translate(30px,50px)} 50%{transform:translate(-60px,20px)} 75%{transform:translate(40px,-30px)} 100%{transform:translate(0,0)} }
+@keyframes float3 { 0%{transform:translate(0,0)} 25%{transform:translate(-40px,-60px)} 50%{transform:translate(50px,30px)} 75%{transform:translate(-20px,60px)} 100%{transform:translate(0,0)} }
+@keyframes float4 { 0%{transform:translate(0,0)} 25%{transform:translate(60px,20px)} 50%{transform:translate(-20px,50px)} 75%{transform:translate(-50px,-40px)} 100%{transform:translate(0,0)} }
+@keyframes float5 { 0%{transform:translate(0,0)} 25%{transform:translate(-30px,60px)} 50%{transform:translate(50px,-30px)} 75%{transform:translate(30px,40px)} 100%{transform:translate(0,0)} }
+@keyframes popIn { 0%{transform:scale(0)} 80%{transform:scale(1.1)} 100%{transform:scale(1)} }
+
+.capybara.dancing { animation:breakdance 1.2s ease-in-out; }
+.capybara.sad { animation:sad 0.5s ease forwards; }
+.capybara.sad .capy-tear { opacity:1; }
+.capybara.sad .capy-smile { transform:rotate(180deg);transform-origin:center top; }
+.capybara.idle { animation:bounce 2s ease-in-out infinite; }
+
+/* ===== COLORS ===== */
+.color-1{color:#C2185B} .color-2{color:#7B1FA2} .color-3{color:#1976D2} .color-4{color:#00796B}
+.color-5{color:#E64A19} .color-6{color:#5D4037} .color-7{color:#0097A7} .color-8{color:#D81B60}
+
+/* ===== WELCOME ===== */
+#welcome-screen .palette-options { display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0; }
+.palette-option { padding:16px;border-radius:var(--radius);border:3px solid transparent;cursor:pointer;transition:all 0.3s;text-align:center;font-weight:bold;font-family:inherit;font-size:1em; }
+.palette-option:hover { transform:scale(1.05); }
+.palette-option.selected { border-color:var(--text);transform:scale(1.05); }
+.palette-option.opt-rose { background:#FFB6C1;color:#5D4E6D; }
+.palette-option.opt-mint { background:#98D8A0;color:#5D4E6D; }
+.palette-option.opt-lavender { background:#C9B1FF;color:#5D4E6D; }
+.palette-option.opt-sunset { background:#FFCBA4;color:#5D4E6D; }
+
+/* ===== HUB ===== */
+.points-display { display:flex;align-items:center;justify-content:center;gap:8px;font-size:1.4em;font-weight:bold;margin:10px 0; }
+
+.games-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0; }
+.game-card { display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 12px;background:var(--card);border-radius:var(--radius);box-shadow:0 4px 15px var(--shadow);cursor:pointer;transition:all 0.3s;text-align:center; }
+.game-card:hover { transform:translateY(-4px);box-shadow:0 8px 25px var(--shadow); }
+.game-card .game-icon { font-size:2.2em; }
+.game-card .game-name { font-weight:bold;font-size:0.95em; }
+.game-card:nth-child(1) { border-bottom:3px solid #C2185B; }
+.game-card:nth-child(2) { border-bottom:3px solid #7B1FA2; }
+.game-card:nth-child(3) { border-bottom:3px solid #1976D2; }
+.game-card:nth-child(4) { border-bottom:3px solid #00796B; }
+.game-card:nth-child(5) { border-bottom:3px solid #E64A19; }
+.game-card:nth-child(6) { border-bottom:3px solid #0097A7; }
+.game-card:nth-child(7) { border-bottom:3px solid #D81B60; }
+.game-card:nth-child(8) { border-bottom:3px solid #5D4037; }
+
+.hub-buttons { display:flex;gap:12px;justify-content:center;margin-top:20px; }
+
+.number-pills { display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0 4px; }
+.number-pill { padding:8px 16px;border-radius:50px;border:2px solid var(--primary);background:var(--card);font-size:1em;font-weight:bold;cursor:pointer;transition:all 0.2s;font-family:inherit;color:var(--text);user-select:none; }
+.number-pill:hover { transform:scale(1.08);background:var(--primary); }
+.number-pill.selected { background:var(--secondary);color:white;border-color:var(--secondary);box-shadow:0 2px 8px rgba(0,0,0,0.15); }
+.number-pill.pill-all { border-color:var(--accent);color:var(--accent); }
+.number-pill.pill-all.selected { background:var(--accent);color:white;border-color:var(--accent); }
+
+/* ===== STAGE SELECT ===== */
+.stages-grid { display:flex;flex-direction:column;gap:12px;margin:20px 0; }
+.stage-card { display:flex;align-items:center;gap:16px;padding:20px;background:var(--card);border-radius:var(--radius);box-shadow:0 4px 15px var(--shadow);cursor:pointer;transition:all 0.3s; }
+.stage-card:hover { transform:translateX(-5px); }
+.stage-icon { font-size:2.5em;min-width:60px;text-align:center; }
+.stage-info { flex:1; }
+.stage-info h3 { margin-bottom:4px; }
+.stage-info p { font-size:0.85em;color:var(--text-light); }
+
+/* ===== QUIZ ===== */
+.quiz-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:20px; }
+.progress-bar { width:100%;height:12px;background:var(--card);border-radius:6px;overflow:hidden;margin:10px 0;box-shadow:inset 0 2px 4px rgba(0,0,0,0.1); }
+.progress-fill { height:100%;background:linear-gradient(90deg,var(--primary),var(--secondary));border-radius:6px;transition:width 0.5s ease; }
+.streak-display { text-align:center;font-size:0.9em;color:var(--text-light);min-height:24px; }
+.streak-display.active { color:var(--gold);font-weight:bold;font-size:1em; }
+.question-display { text-align:center;font-size:3em;font-weight:bold;margin:20px 0; }
+.answer-input-row { display:flex;gap:10px;margin-bottom:16px; }
+.answer-input-row input { flex:1;font-size:1.3em; }
+.answer-input-row .btn { padding:14px 24px;white-space:nowrap; }
+.choices-grid { display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0; }
+.choice-btn { padding:18px;border:3px solid var(--primary);border-radius:var(--radius);background:var(--card);font-size:1.4em;font-weight:bold;cursor:pointer;transition:all 0.2s;font-family:inherit; }
+.choice-btn:nth-child(1){color:#C2185B;border-color:#F8BBD0} .choice-btn:nth-child(2){color:#7B1FA2;border-color:#E1BEE7}
+.choice-btn:nth-child(3){color:#1976D2;border-color:#BBDEFB} .choice-btn:nth-child(4){color:#00796B;border-color:#B2DFDB}
+.choice-btn:hover { background:var(--primary);transform:scale(1.05); }
+.choice-btn.correct { background:var(--success)!important;border-color:var(--success)!important;animation:pulse 0.5s; }
+.choice-btn.wrong { background:var(--error)!important;border-color:var(--error)!important;animation:shake 0.5s; }
+.feedback-area { text-align:center;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center; }
+.feedback-text { font-size:1.3em;font-weight:bold;margin:10px 0; }
+.feedback-text.correct-text { color:#4CAF50; } .feedback-text.wrong-text { color:#E57373; }
+.capybara-fact { background:var(--card);border-radius:var(--radius);padding:14px 20px;margin:10px 0;font-size:0.95em;border-right:4px solid var(--accent);text-align:right;max-width:400px;box-shadow:0 2px 8px var(--shadow); }
+.points-earned { font-size:1.5em;font-weight:bold;color:var(--gold);animation:pulse 0.6s; }
+
+/* ===== MATCHING GAME ===== */
+.matching-container { position:relative;min-height:400px; }
+.matching-columns { display:flex;justify-content:space-between;align-items:flex-start; }
+.matching-col { display:flex;flex-direction:column;gap:12px;z-index:2;position:relative; }
+.match-item { padding:14px 20px;background:var(--card);border-radius:var(--radius);box-shadow:0 2px 8px var(--shadow);cursor:pointer;transition:all 0.2s;font-weight:bold;font-size:1.1em;text-align:center;min-width:90px;border:3px solid transparent;user-select:none; }
+.match-item:hover { transform:scale(1.05); }
+.match-item.selected { border-color:var(--secondary);background:var(--secondary);color:white; }
+.match-item.matched-correct { border-color:var(--success);background:#E8F5E9; }
+.match-item.matched-wrong { border-color:var(--error);background:#FFEBEE; }
+.matching-svg { position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none; }
+.matching-svg line { stroke-width:3;stroke-linecap:round; }
+
+/* ===== BUBBLES GAME ===== */
+.bubbles-arena { position:relative;width:100%;height:420px;background:linear-gradient(180deg,#E3F2FD,var(--bg));border-radius:var(--radius);overflow:hidden;margin:16px 0; }
+.bubble { position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1.3em;cursor:pointer;transition:transform 0.2s;user-select:none;box-shadow:inset -4px -4px 8px rgba(0,0,0,0.1),inset 4px 4px 8px rgba(255,255,255,0.5); }
+.bubble:hover { transform:scale(1.15)!important; }
+.bubble.popping { animation:pop 0.3s ease forwards; }
+.bubble.wrong-shake { animation:shake 0.4s ease; }
+@keyframes pop { 0%{transform:scale(1);opacity:1} 50%{transform:scale(1.5);opacity:0.5} 100%{transform:scale(0);opacity:0} }
+
+/* ===== SHOOTER GAME ===== */
+.shooter-arena { position:relative;width:100%;height:450px;background:linear-gradient(180deg,#E8EAF6,var(--bg));border-radius:var(--radius);overflow:hidden;margin:16px 0; }
+.falling-answer { position:absolute;width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1.2em;background:var(--card);box-shadow:0 4px 12px var(--shadow);transition:none; }
+.cannon { position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:2.5em;transition:left 0.1s;z-index:5;cursor:pointer; }
+.candy-bullet { position:absolute;width:20px;height:20px;font-size:20px;z-index:4;pointer-events:none; }
+
+/* ===== FILL TABLE ===== */
+.fill-table { border-collapse:collapse;width:100%;margin:16px 0; }
+.fill-table th,.fill-table td { padding:10px 6px;text-align:center;border:2px solid #eee;font-size:1em;min-width:42px; }
+.fill-table th { background:var(--primary);font-weight:bold;color:var(--text); }
+.fill-table td { cursor:pointer;transition:all 0.3s;font-weight:bold; }
+.fill-table td.empty { background:#FAFAFA;color:#999; }
+.fill-table td.empty:hover { background:#F0F0F0; }
+.fill-table td.filled { background:var(--card);color:var(--text); }
+.fill-table td.correct-cell { background:#C8E6C9!important;color:#2E7D32!important;animation:popIn 0.3s; }
+.fill-table td.wrong-cell { animation:shake 0.4s; }
+.fill-table td.editing { background:var(--accent);color:var(--text);box-shadow:inset 0 0 0 3px var(--secondary); }
+
+.table-input-area { display:flex;gap:10px;align-items:center;justify-content:center;margin:16px 0; }
+.table-input-area input { width:100px;font-size:1.3em;padding:10px; }
+.numpad { display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:280px;margin:16px auto;padding:12px;background:var(--card);border-radius:var(--radius);box-shadow:0 2px 12px rgba(0,0,0,0.08); }
+.numpad-btn { padding:16px;font-size:1.4em;font-weight:bold;border:2px solid var(--primary);border-radius:12px;background:white;color:var(--text);cursor:pointer;transition:all 0.15s;user-select:none; }
+.numpad-btn:hover { background:var(--primary);transform:scale(1.05); }
+.numpad-btn:active { transform:scale(0.95);background:var(--secondary); }
+.numpad-del { color:#E57373;border-color:#E57373; }
+.numpad-ok { color:white;background:var(--secondary);border-color:var(--secondary); }
+.numpad-ok:hover { background:var(--primary);border-color:var(--primary); }
+
+/* ===== MEMORY GAME ===== */
+.memory-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0; }
+.memory-card { aspect-ratio:1;background:var(--primary);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1em;cursor:pointer;transition:all 0.4s;box-shadow:0 2px 8px var(--shadow);user-select:none; }
+.memory-card .card-back { font-size:2em;color:var(--text-light); }
+.memory-card .card-front { display:none;font-size:1.1em; }
+.memory-card.flipped { background:var(--card); }
+.memory-card.flipped .card-front { display:flex; }
+.memory-card.flipped .card-back { display:none; }
+.memory-card.matched { background:#C8E6C9;cursor:default; }
+.memory-card.matched .card-front { display:flex;flex-direction:column;gap:4px; }
+.memory-card.matched .card-back { display:none; }
+
+/* ===== TIME RACE ===== */
+.race-timer { font-size:2.5em;text-align:center;font-weight:bold;color:#C2185B;margin:10px 0; }
+.race-score { font-size:1.2em;text-align:center;color:var(--text-light);margin:5px 0; }
+.race-track { width:100%;height:40px;background:var(--card);border-radius:20px;overflow:hidden;margin:10px 0;position:relative;box-shadow:inset 0 2px 4px rgba(0,0,0,0.1); }
+.race-runner { position:absolute;top:2px;right:5px;font-size:1.8em;transition:right 0.3s ease; }
+.race-input { display:flex;gap:10px;margin:16px 0; }
+.race-input input { flex:1;font-size:1.5em;padding:16px; }
+
+/* ===== PUZZLE GAME ===== */
+.puzzle-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:16px 0;max-width:360px;margin-left:auto;margin-right:auto; }
+.puzzle-piece { aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:2em;transition:all 0.5s;position:relative;overflow:hidden; }
+.puzzle-piece.hidden { background:var(--primary);cursor:default; }
+.puzzle-piece.hidden::after { content:'?';font-size:1.5em;color:rgba(255,255,255,0.5); }
+.puzzle-piece.revealed { animation:popIn 0.5s; }
+
+/* ===== REPORT CARD ===== */
+.mastery-grid-container { overflow-x:auto; }
+.mastery-grid { border-collapse:collapse;width:100%;margin:16px 0;font-size:0.85em; }
+.mastery-grid th,.mastery-grid td { padding:8px 4px;text-align:center;border:1px solid #eee;min-width:36px; }
+.mastery-grid th { background:var(--primary);font-weight:bold; }
+.mastery-grid td { border-radius:4px;font-weight:bold;transition:background 0.3s; }
+.mastery-green{background:#C8E6C9!important;color:#2E7D32} .mastery-yellow{background:#FFF9C4!important;color:#F57F17}
+.mastery-red{background:#FFCDD2!important;color:#C62828} .mastery-none{background:#F5F5F5!important;color:#999}
+.stats-grid { display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0; }
+.stat-card { background:var(--card);border-radius:var(--radius);padding:16px;text-align:center;box-shadow:0 2px 8px var(--shadow); }
+.stat-value { font-size:2em;font-weight:bold;color:var(--primary); }
+.stat-label { font-size:0.85em;color:var(--text-light);margin-top:4px; }
+.overall-mastery { text-align:center;margin:20px 0; }
+.mastery-percent { font-size:3em;font-weight:bold;color:var(--primary); }
+
+/* ===== SHOP ===== */
+.shop-grid { display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0; }
+.shop-item { background:var(--card);border-radius:var(--radius);padding:16px;text-align:center;box-shadow:0 2px 8px var(--shadow);cursor:pointer;transition:all 0.3s;border:2px solid transparent; }
+.shop-item:hover:not(.owned):not(.too-expensive) { transform:translateY(-3px);border-color:var(--primary); }
+.shop-item.owned { border-color:var(--success);background:#F0FFF0; }
+.shop-item.too-expensive { opacity:0.6;cursor:not-allowed; }
+.shop-emoji { font-size:2.5em;margin-bottom:8px; }
+.shop-name { font-weight:bold;margin-bottom:4px; }
+.shop-price { color:var(--text-light);font-size:0.9em; }
+.shop-owned-badge { color:var(--success);font-weight:bold;font-size:0.85em; }
+
+/* ===== STAGE COMPLETE ===== */
+.stage-complete { text-align:center; }
+.stage-complete .big-stars { font-size:3em;margin:20px 0; }
+.stage-complete .score-text { font-size:1.2em;margin:10px 0; }
+
+/* ===== AI CAPYBARA SETUP ===== */
+.capy-desc-input { width:100%;padding:14px;border:2px solid var(--primary);border-radius:var(--radius);font-size:1em;font-family:inherit;outline:none;resize:none;height:80px; }
+.image-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:16px 0; }
+.image-option { border-radius:var(--radius);overflow:hidden;cursor:pointer;border:3px solid #e0d0e8;transition:all 0.3s;aspect-ratio:1;background:var(--card);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+.image-option:hover { transform:scale(1.03); }
+.image-option.selected { border-color:var(--secondary);box-shadow:0 0 20px rgba(221,160,221,0.5); }
+.image-option img { width:100%;height:100%;object-fit:cover; }
+.loading-container { text-align:center;padding:40px 20px; }
+.loading-spinner { display:inline-block;width:60px;height:60px;border:5px solid var(--primary);border-top-color:var(--secondary);border-radius:50%;animation:spin 1s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.loading-text { margin-top:16px;font-size:1.1em;color:var(--text-light); }
+.loading-progress { width:100%;height:8px;background:var(--card);border-radius:4px;margin:16px 0;overflow:hidden; }
+.loading-progress-fill { height:100%;background:linear-gradient(90deg,var(--primary),var(--secondary));transition:width 0.5s;border-radius:4px; }
+.video-feedback { width:200px;height:200px;border-radius:var(--radius);object-fit:cover;margin:10px auto;display:block; }
+.capy-hub-img { width:160px;height:160px;border-radius:50%;object-fit:cover;border:4px solid var(--primary);box-shadow:0 4px 15px var(--shadow); }
+.reset-capy-btn { position:absolute;top:10px;left:10px;background:var(--card);border:2px solid var(--primary);border-radius:50%;width:36px;height:36px;font-size:1.2em;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s;z-index:5; }
+.reset-capy-btn:hover { background:var(--primary); }
+.style-label { font-size:0.75em;text-align:center;margin-top:4px;color:var(--text-light); }
+
+@media(max-width:480px) {
+  .question-display{font-size:2.2em} .choice-btn{padding:14px;font-size:1.2em} h1{font-size:1.6em}
+  .games-grid{grid-template-columns:repeat(2,1fr)} .memory-grid{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== WELCOME ===== -->
+<div id="welcome-screen" class="screen active">
+  <div style="text-align:center;font-size:4em;margin-top:30px;">🐹</div>
+  <h1>משחק לוח הכפל!</h1>
+  <p style="text-align:center;color:var(--text-light);">בואי נלמד את לוח הכפל יחד עם חברה חדשה!</p>
+  <div class="card">
+    <label style="font-weight:bold;display:block;margin-bottom:8px;">איך קוראים לקפיברה שלך?</label>
+    <input type="text" id="capy-name-input" placeholder="בחרי שם..." maxlength="20">
+  </div>
+  <div class="card">
+    <label style="font-weight:bold;display:block;margin-bottom:12px;">בחרי צבעים:</label>
+    <div class="palette-options">
+      <button class="palette-option opt-rose selected" data-palette="palette-rose" onclick="selectPalette(this)">ורוד 🌸</button>
+      <button class="palette-option opt-mint" data-palette="palette-mint" onclick="selectPalette(this)">מנטה 🌿</button>
+      <button class="palette-option opt-lavender" data-palette="palette-lavender" onclick="selectPalette(this)">לבנדר 💜</button>
+      <button class="palette-option opt-sunset" data-palette="palette-sunset" onclick="selectPalette(this)">שקיעה 🌅</button>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:20px;">
+    <button class="btn btn-primary" onclick="startGame()" style="font-size:1.3em;padding:18px 48px;">!בואו נתחיל</button>
+  </div>
+</div>
+
+<!-- ===== CAPYBARA AI SETUP ===== -->
+<div id="capy-desc-screen" class="screen">
+  <h1>🎨 עיצוב הקפיברה שלך</h1>
+  <p style="text-align:center;color:var(--text-light);margin-bottom:16px;">תארי את הקפיברה שלך ונייצר תמונות בסגנונות שונים!</p>
+  <div class="card">
+    <label style="font-weight:bold;display:block;margin-bottom:8px;">איך הקפיברה שלך נראית?</label>
+    <textarea id="capy-desc-input" class="capy-desc-input" placeholder="למשל: קפיברה חמודה עם כובע ורוד ועיניים גדולות..." dir="rtl"></textarea>
+  </div>
+  <div style="text-align:center;margin-top:16px;">
+    <button class="btn btn-primary" onclick="generateCapyImages()" style="font-size:1.2em;padding:16px 40px;">🖌️ ציירי לי!</button>
+  </div>
+  <div style="text-align:center;margin-top:12px;">
+    <button class="btn btn-back" onclick="skipCapyAI()" style="font-size:0.9em;">דלגי →</button>
+  </div>
+  <div id="capy-gen-status" style="display:none;text-align:center;margin-top:20px;">
+    <div class="loading-spinner"></div>
+    <p style="margin-top:12px;font-weight:bold;" id="capy-gen-text">מציירת קפיברות...</p>
+  </div>
+</div>
+
+<div id="capy-select-screen" class="screen">
+  <h1>🐹 בחרי את הקפיברה שלך!</h1>
+  <p style="text-align:center;color:var(--text-light);margin-bottom:12px;">לחצי על התמונה שהכי מוצאת חן בעינייך</p>
+  <div class="image-grid" id="capy-image-grid"></div>
+  <div style="text-align:center;margin-top:16px;">
+    <button class="btn btn-primary" id="capy-select-btn" onclick="confirmCapyImage()" style="font-size:1.2em;padding:16px 40px;display:none;">✨ זו הקפיברה שלי!</button>
+  </div>
+</div>
+
+<div id="capy-videos-screen" class="screen">
+  <h1>🎨 מכינה את הקפיברה שלך!</h1>
+  <div class="card" style="text-align:center;">
+    <div class="loading-spinner"></div>
+    <p style="margin-top:16px;font-weight:bold;" id="video-gen-text">מציירת תמונות וסרטונים...</p>
+    <div id="video-progress" style="margin-top:12px;">
+      <div style="background:#eee;border-radius:10px;height:20px;overflow:hidden;margin:12px 0;">
+        <div id="video-progress-bar" style="background:linear-gradient(90deg,var(--primary),var(--secondary));height:100%;width:0%;transition:width 0.5s;border-radius:10px;"></div>
+      </div>
+      <span id="video-progress-text">0 / 25</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== HUB ===== -->
+<div id="hub-screen" class="screen">
+  <div class="capybara-container" style="position:relative;">
+    <button class="reset-capy-btn" onclick="resetCapyStyle()" title="שנה סגנון קפיברה" id="reset-capy-btn" style="display:none;">🎨</button>
+    <div class="capybara idle" id="hub-capybara">
+      <div class="capy-accessory accessory-crown" id="acc-crown">⭐</div>
+      <div class="capy-accessory accessory-hat" id="acc-hat">🎩</div>
+      <div class="capy-accessory accessory-ribbon" id="acc-ribbon">🎀</div>
+      <div class="capy-accessory accessory-flower" id="acc-flower">🌸</div>
+      <div class="capy-accessory accessory-glasses" id="acc-glasses">🕶️</div>
+      <div class="capy-accessory accessory-rainbow" id="acc-rainbow">🌈</div>
+      <div class="capy-accessory accessory-butterfly" id="acc-butterfly">🦋</div>
+      <div class="capy-accessory accessory-music" id="acc-music">🎵</div>
+      <div class="capy-head"><div class="capy-ear left"></div><div class="capy-ear right"></div><div class="capy-eye left"><div class="capy-eye-shine"></div></div><div class="capy-eye right"><div class="capy-eye-shine"></div></div><div class="capy-snout"><div class="capy-nose"></div></div><div class="capy-smile"></div></div>
+      <div class="capy-body"></div>
+      <div class="capy-legs"><div class="capy-leg"></div><div class="capy-leg"></div><div class="capy-leg"></div><div class="capy-leg"></div></div>
+    </div>
+    <img id="hub-capy-img" class="capy-hub-img" style="display:none;" alt="הקפיברה שלי">
+    <div class="capy-name" id="hub-capy-name"></div>
+  </div>
+  <div class="points-display"><span>⭐</span><span id="hub-points">0</span><span>נקודות</span></div>
+  <div class="number-pills" id="number-pills">
+    <button class="number-pill pill-all selected" data-num="all" onclick="togglePill(this)">הכל</button>
+    <button class="number-pill" data-num="2" onclick="togglePill(this)">2</button>
+    <button class="number-pill" data-num="3" onclick="togglePill(this)">3</button>
+    <button class="number-pill" data-num="4" onclick="togglePill(this)">4</button>
+    <button class="number-pill" data-num="5" onclick="togglePill(this)">5</button>
+    <button class="number-pill" data-num="6" onclick="togglePill(this)">6</button>
+    <button class="number-pill" data-num="7" onclick="togglePill(this)">7</button>
+    <button class="number-pill" data-num="8" onclick="togglePill(this)">8</button>
+    <button class="number-pill" data-num="9" onclick="togglePill(this)">9</button>
+    <button class="number-pill" data-num="10" onclick="togglePill(this)">10</button>
+  </div>
+  <h2 style="margin-top:10px;">בחרי משחק:</h2>
+  <div class="games-grid">
+    <div class="game-card" onclick="selectGame('quiz')"><div class="game-icon">🎯</div><div class="game-name">חידון</div></div>
+    <div class="game-card" onclick="selectGame('matching')"><div class="game-icon">🔗</div><div class="game-name">התאמה</div></div>
+    <div class="game-card" onclick="selectGame('shooter')"><div class="game-icon">🍬</div><div class="game-name">רובה סוכריות</div></div>
+    <div class="game-card" onclick="selectGame('bubbles')"><div class="game-icon">🫧</div><div class="game-name">בועות</div></div>
+    <div class="game-card" onclick="selectGame('table')"><div class="game-icon">📋</div><div class="game-name">מילוי טבלה</div></div>
+    <div class="game-card" onclick="selectGame('memory')"><div class="game-icon">🃏</div><div class="game-name">זיכרון</div></div>
+    <div class="game-card" onclick="selectGame('race')"><div class="game-icon">⏱️</div><div class="game-name">מירוץ זמן</div></div>
+    <div class="game-card" onclick="selectGame('puzzle')"><div class="game-icon">🧩</div><div class="game-name">חידת תמונה</div></div>
+  </div>
+  <div class="hub-buttons">
+    <button class="btn btn-accent" onclick="showScreen('report-screen')">📊 תעודה</button>
+    <button class="btn btn-secondary" onclick="showScreen('shop-screen')">🛍️ חנות</button>
+  </div>
+</div>
+
+<!-- ===== STAGE SELECT ===== -->
+<div id="stage-screen" class="screen">
+  <button class="btn btn-back" onclick="showScreen('hub-screen')">→ חזרה</button>
+  <h2 id="stage-game-title"></h2>
+  <div class="stages-grid" id="stage-select-container"></div>
+</div>
+
+<!-- ===== QUIZ ===== -->
+<div id="quiz-screen" class="screen">
+  <div class="quiz-header"><button class="btn btn-back" onclick="exitGame()">→ חזרה</button><span id="quiz-stage-title"></span></div>
+  <div class="progress-bar"><div class="progress-fill" id="quiz-progress" style="width:0%"></div></div>
+  <div class="streak-display" id="streak-display"></div>
+  <div class="question-display" id="question-display"></div>
+  <div class="answer-input-row">
+    <input type="number" id="answer-input" placeholder="הקלידי תשובה..." inputmode="numeric">
+    <button class="btn btn-primary" onclick="submitTypedAnswer()">שלחי</button>
+  </div>
+  <div style="text-align:center;margin:8px 0;color:var(--text-light);">או בחרי:</div>
+  <div class="choices-grid" id="choices-grid"></div>
+  <div class="feedback-area" id="feedback-area"></div>
+  <div class="numpad">
+    <button class="numpad-btn" onclick="numpadTo('answer-input',1)">1</button>
+    <button class="numpad-btn" onclick="numpadTo('answer-input',2)">2</button>
+    <button class="numpad-btn" onclick="numpadTo('answer-input',3)">3</button>
+    <button class="numpad-btn" onclick="numpadTo('answer-input',4)">4</button>
+    <button class="numpad-btn" onclick="numpadTo('answer-input',5)">5</button>
+    <button class="numpad-btn" onclick="numpadTo('answer-input',6)">6</button>
+    <button class="numpad-btn" onclick="numpadTo('answer-input',7)">7</button>
+    <button class="numpad-btn" onclick="numpadTo('answer-input',8)">8</button>
+    <button class="numpad-btn" onclick="numpadTo('answer-input',9)">9</button>
+    <button class="numpad-btn numpad-del" onclick="numpadDel('answer-input')">⌫</button>
+    <button class="numpad-btn" onclick="numpadTo('answer-input',0)">0</button>
+    <button class="numpad-btn numpad-ok" onclick="submitTypedAnswer()">✓</button>
+  </div>
+</div>
+
+<!-- ===== MATCHING ===== -->
+<div id="matching-screen" class="screen">
+  <div class="quiz-header"><button class="btn btn-back" onclick="exitGame()">→ חזרה</button><span>🔗 התאמת קווים</span></div>
+  <p style="text-align:center;color:var(--text-light);margin-bottom:16px;">לחצי על תרגיל ואז על התשובה שלו</p>
+  <div class="matching-container" id="matching-container">
+    <svg class="matching-svg" id="matching-svg"></svg>
+    <div class="matching-columns" id="matching-columns"></div>
+  </div>
+  <div style="text-align:center;margin-top:16px;">
+    <button class="btn btn-primary" id="check-matching-btn" onclick="checkMatching()" style="display:none;">!בדקי</button>
+  </div>
+  <div class="feedback-area" id="matching-feedback"></div>
+</div>
+
+<!-- ===== BUBBLES ===== -->
+<div id="bubbles-screen" class="screen">
+  <div class="quiz-header"><button class="btn btn-back" onclick="exitGame()">→ חזרה</button><span>🫧 בועות פיצוץ</span></div>
+  <div class="question-display" id="bubble-question"></div>
+  <div class="progress-bar"><div class="progress-fill" id="bubble-progress" style="width:0%"></div></div>
+  <div class="bubbles-arena" id="bubbles-arena"></div>
+  <div class="feedback-area" id="bubble-feedback"></div>
+</div>
+
+<!-- ===== SHOOTER ===== -->
+<div id="shooter-screen" class="screen">
+  <div class="quiz-header"><button class="btn btn-back" onclick="exitGame()">→ חזרה</button><span>🍬 רובה סוכריות</span></div>
+  <div class="question-display" id="shooter-question"></div>
+  <div class="progress-bar"><div class="progress-fill" id="shooter-progress" style="width:0%"></div></div>
+  <div class="shooter-arena" id="shooter-arena">
+    <div class="cannon" id="cannon">🍬</div>
+  </div>
+  <div class="feedback-area" id="shooter-feedback"></div>
+</div>
+
+<!-- ===== FILL TABLE ===== -->
+<div id="table-screen" class="screen">
+  <div class="quiz-header"><button class="btn btn-back" onclick="exitGame()">→ חזרה</button><span>📋 מילוי טבלה</span></div>
+  <div id="table-status" style="text-align:center;margin:10px 0;font-weight:bold;"></div>
+  <div style="overflow-x:auto;"><table class="fill-table" id="fill-table"></table></div>
+  <div class="table-input-area" id="table-input-area" style="display:none;">
+    <span id="table-cell-label" style="font-weight:bold;font-size:1.2em;"></span>
+    <input type="number" id="table-answer" placeholder="?" inputmode="numeric" style="width:80px;">
+    <button class="btn btn-primary" onclick="submitTableAnswer()" style="padding:10px 20px;">✓</button>
+  </div>
+  <div class="feedback-area" id="table-feedback"></div>
+  <div class="numpad" id="table-numpad" style="display:none;">
+    <button class="numpad-btn" onclick="numpadPress(1)">1</button>
+    <button class="numpad-btn" onclick="numpadPress(2)">2</button>
+    <button class="numpad-btn" onclick="numpadPress(3)">3</button>
+    <button class="numpad-btn" onclick="numpadPress(4)">4</button>
+    <button class="numpad-btn" onclick="numpadPress(5)">5</button>
+    <button class="numpad-btn" onclick="numpadPress(6)">6</button>
+    <button class="numpad-btn" onclick="numpadPress(7)">7</button>
+    <button class="numpad-btn" onclick="numpadPress(8)">8</button>
+    <button class="numpad-btn" onclick="numpadPress(9)">9</button>
+    <button class="numpad-btn numpad-del" onclick="numpadDelete()">⌫</button>
+    <button class="numpad-btn" onclick="numpadPress(0)">0</button>
+    <button class="numpad-btn numpad-ok" onclick="submitTableAnswer()">✓</button>
+  </div>
+</div>
+
+<!-- ===== MEMORY ===== -->
+<div id="memory-screen" class="screen">
+  <div class="quiz-header"><button class="btn btn-back" onclick="exitGame()">→ חזרה</button><span>🃏 זיכרון</span></div>
+  <div id="memory-status" style="text-align:center;margin:10px 0;"></div>
+  <div class="memory-grid" id="memory-grid"></div>
+  <div class="feedback-area" id="memory-feedback"></div>
+</div>
+
+<!-- ===== TIME RACE ===== -->
+<div id="race-screen" class="screen">
+  <div class="quiz-header"><button class="btn btn-back" onclick="exitGame()">→ חזרה</button><span>⏱️ מירוץ זמן</span></div>
+  <div class="race-timer" id="race-timer">60</div>
+  <div class="race-score">נכונות: <span id="race-correct">0</span></div>
+  <div class="race-track"><div class="race-runner" id="race-runner">🐹</div></div>
+  <div class="question-display" id="race-question"></div>
+  <div class="race-input">
+    <input type="number" id="race-input" placeholder="תשובה..." inputmode="numeric">
+    <button class="btn btn-primary" onclick="submitRaceAnswer()" style="padding:14px 24px;">→</button>
+  </div>
+  <div class="feedback-area" id="race-feedback"></div>
+  <div class="numpad">
+    <button class="numpad-btn" onclick="numpadTo('race-input',1)">1</button>
+    <button class="numpad-btn" onclick="numpadTo('race-input',2)">2</button>
+    <button class="numpad-btn" onclick="numpadTo('race-input',3)">3</button>
+    <button class="numpad-btn" onclick="numpadTo('race-input',4)">4</button>
+    <button class="numpad-btn" onclick="numpadTo('race-input',5)">5</button>
+    <button class="numpad-btn" onclick="numpadTo('race-input',6)">6</button>
+    <button class="numpad-btn" onclick="numpadTo('race-input',7)">7</button>
+    <button class="numpad-btn" onclick="numpadTo('race-input',8)">8</button>
+    <button class="numpad-btn" onclick="numpadTo('race-input',9)">9</button>
+    <button class="numpad-btn numpad-del" onclick="numpadDel('race-input')">⌫</button>
+    <button class="numpad-btn" onclick="numpadTo('race-input',0)">0</button>
+    <button class="numpad-btn numpad-ok" onclick="submitRaceAnswer()">✓</button>
+  </div>
+</div>
+
+<!-- ===== PUZZLE ===== -->
+<div id="puzzle-screen" class="screen">
+  <div class="quiz-header"><button class="btn btn-back" onclick="exitGame()">→ חזרה</button><span>🧩 חידת תמונה</span></div>
+  <div class="progress-bar"><div class="progress-fill" id="puzzle-progress" style="width:0%"></div></div>
+  <div class="question-display" id="puzzle-question"></div>
+  <div class="answer-input-row">
+    <input type="number" id="puzzle-input" placeholder="תשובה..." inputmode="numeric">
+    <button class="btn btn-primary" onclick="submitPuzzleAnswer()">שלחי</button>
+  </div>
+  <div class="puzzle-grid" id="puzzle-grid"></div>
+  <div class="feedback-area" id="puzzle-feedback"></div>
+  <div class="numpad">
+    <button class="numpad-btn" onclick="numpadTo('puzzle-input',1)">1</button>
+    <button class="numpad-btn" onclick="numpadTo('puzzle-input',2)">2</button>
+    <button class="numpad-btn" onclick="numpadTo('puzzle-input',3)">3</button>
+    <button class="numpad-btn" onclick="numpadTo('puzzle-input',4)">4</button>
+    <button class="numpad-btn" onclick="numpadTo('puzzle-input',5)">5</button>
+    <button class="numpad-btn" onclick="numpadTo('puzzle-input',6)">6</button>
+    <button class="numpad-btn" onclick="numpadTo('puzzle-input',7)">7</button>
+    <button class="numpad-btn" onclick="numpadTo('puzzle-input',8)">8</button>
+    <button class="numpad-btn" onclick="numpadTo('puzzle-input',9)">9</button>
+    <button class="numpad-btn numpad-del" onclick="numpadDel('puzzle-input')">⌫</button>
+    <button class="numpad-btn" onclick="numpadTo('puzzle-input',0)">0</button>
+    <button class="numpad-btn numpad-ok" onclick="submitPuzzleAnswer()">✓</button>
+  </div>
+</div>
+
+<!-- ===== COMPLETE ===== -->
+<div id="complete-screen" class="screen">
+  <div class="card stage-complete">
+    <h1>🎉 כל הכבוד!</h1>
+    <div class="big-stars" id="complete-stars"></div>
+    <div class="score-text" id="complete-score"></div>
+    <div id="complete-points-earned" style="font-size:1.3em;color:var(--gold);margin:10px 0;"></div>
+    <div class="capybara-container" style="margin:20px 0;">
+      <div class="capybara dancing">
+        <div class="capy-head"><div class="capy-ear left"></div><div class="capy-ear right"></div><div class="capy-eye left"><div class="capy-eye-shine"></div></div><div class="capy-eye right"><div class="capy-eye-shine"></div></div><div class="capy-snout"><div class="capy-nose"></div></div><div class="capy-smile"></div></div>
+        <div class="capy-body"></div><div class="capy-legs"><div class="capy-leg"></div><div class="capy-leg"></div><div class="capy-leg"></div><div class="capy-leg"></div></div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="showScreen('hub-screen')" style="margin-top:10px;">→ חזרה לתפריט</button>
+  </div>
+</div>
+
+<!-- ===== REPORT ===== -->
+<div id="report-screen" class="screen">
+  <button class="btn btn-back" onclick="showScreen('hub-screen')">→ חזרה</button>
+  <h2>📊 תעודת לוח הכפל</h2>
+  <div class="overall-mastery"><div class="mastery-percent" id="mastery-percent">0%</div><div style="color:var(--text-light)">שליטה כללית</div></div>
+  <div class="stats-grid" id="stats-grid"></div>
+  <div class="card">
+    <h3 style="margin-bottom:12px;text-align:center;">מפת שליטה</h3>
+    <div class="mastery-grid-container"><table class="mastery-grid" id="mastery-table"></table></div>
+    <div style="display:flex;gap:16px;justify-content:center;margin-top:12px;font-size:0.8em;color:var(--text-light);">
+      <span>🟢 שולטת</span><span>🟡 בתהליך</span><span>🔴 צריך תרגול</span><span>⚪ עוד לא</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SHOP ===== -->
+<div id="shop-screen" class="screen">
+  <button class="btn btn-back" onclick="showScreen('hub-screen')">→ חזרה</button>
+  <h2>🛍️ חנות</h2>
+  <div class="points-display"><span>⭐</span><span id="shop-points">0</span><span>נקודות</span></div>
+  <div class="shop-grid" id="shop-grid"></div>
+</div>
+
+<script>
+// ===== STATE =====
+const DEFAULT_STATE = {
+  capybaraName:'',colorPalette:'palette-rose',totalPoints:0,ownedItems:[],
+  masteryGrid:{},
+  stats:{totalQuestions:0,totalCorrect:0,totalFirstTry:0,longestStreak:0,bestRace:0}
+};
+let state = {};
+
+// ===== STAGES =====
+const STAGES = [
+  {id:'easy',name:'קל',desc:'כפל של 2, 5, 10',icon:'🌟',tables:[2,5,10]},
+  {id:'medium',name:'בינוני',desc:'כפל של 3, 4, 6, 7',icon:'🔥',tables:[3,4,6,7]},
+  {id:'hard',name:'קשה',desc:'כל לוח הכפל',icon:'🏆',tables:[2,3,4,5,6,7,8,9,10]}
+];
+
+const SHOP_ITEMS = [
+  {id:'ribbon',emoji:'🎀',name:'סרט',price:50,accessoryId:'acc-ribbon'},
+  {id:'flower',emoji:'🌸',name:'פרח',price:30,accessoryId:'acc-flower'},
+  {id:'hat',emoji:'🎩',name:'כובע',price:80,accessoryId:'acc-hat'},
+  {id:'glasses',emoji:'🕶️',name:'משקפי שמש',price:60,accessoryId:'acc-glasses'},
+  {id:'music',emoji:'🎵',name:'מוזיקה',price:100,accessoryId:'acc-music'},
+  {id:'rainbow',emoji:'🌈',name:'קשת',price:40,accessoryId:'acc-rainbow'},
+  {id:'crown',emoji:'⭐',name:'כתר',price:150,accessoryId:'acc-crown'},
+  {id:'butterfly',emoji:'🦋',name:'פרפר',price:70,accessoryId:'acc-butterfly'}
+];
+
+const CAPY_FACTS = [
+  'קפיברות הן המכרסמות הגדולות בעולם! הן יכולות לשקול עד 65 ק"ג.',
+  'קפיברות חיות בדרום אמריקה, בעיקר ליד נהרות ואגמים.',
+  'קפיברות יכולות להישאר מתחת למים עד 5 דקות!',
+  'קפיברות הן חיות חברתיות מאוד וחיות בקבוצות של 10-20.',
+  'לקפיברות יש שיניים שגדלות כל החיים, כמו לכל המכרסמים.',
+  'קפיברות אוהבות לשבת במים חמים, בדיוק כמו ג\'קוזי!',
+  'קפיברות יכולות לרוץ מהר כמו סוס - עד 35 קמ"ש!',
+  'קפיברות הן חברות של כולם - גם ציפורים אוהבות לשבת עליהן.',
+  'קפיברות מתקשרות ביניהן עם צלילים שונים - חריקות, שריקות ונביחות.',
+  'בקפיברות יש קרום בין האצבעות שעוזר להן לשחות.',
+  'קפיברות אוכלות בעיקר עשב ותקציר צמחים.',
+  'תינוקות קפיברה יכולים לשחות כבר ביום שנולדו!',
+  'השם "קפיברה" מגיע משפת הגואראני ופירושו "אדון העשב".',
+  'קפיברות יכולות לישון במים כשרק האף שלהן בחוץ.',
+  'לקפיברות אין זנב - הן אחד מהיונקים הבודדים בלי!',
+  'קפיברות חיות כ-8 עד 12 שנים בטבע.',
+  'קפיברות הן קרובות משפחה של שפני ניסיון (חזירי ים)!',
+  'ביפן יש פארקים מיוחדים שבהם קפיברות מתרחצות במעיינות חמים.',
+  'קפיברה בוגרת יכולה להיות באורך של 1.3 מטר!',
+  'קפיברות הן שחקניות מעולות ואפילו יודעות לצלול.',
+  'לקפיברות עיניים, אוזניים ואף בחלק העליון של הראש - ככה הן יכולות לשחות ולראות.',
+  'קפיברות אוהבות ללטף אחת את השנייה ולטפל זו בזו.',
+  'קפיברות יכולות לאכול עד 3.5 ק"ג של צמחים ביום!',
+  'ביום חם, קפיברות מבלות את רוב היום במים כדי להתקרר.',
+  'עיניהן של קפיברות הן גדולות ויפות, בצבע חום כהה.',
+  'קפיברות הן חיות מאוד רגועות ושלוות, כמעט אף פעם לא מתעצבנות.',
+  'תינוק קפיברה נקרא "פאפ" (pup) באנגלית.',
+  'קפיברות אוהבות לגלגל על הגב בשמש - ממש כמו כלבים!',
+  'בברזיל, קפיברות נחשבות לחיה הכי חברותית בטבע.',
+  'האוזניים של קפיברות הן עגולות וקטנות ונמצאות גבוה על הראש.'
+];
+let factIndex = 0;
+
+const COLORS = ['color-1','color-2','color-3','color-4','color-5','color-6','color-7','color-8'];
+const CAPYBARA_HTML = `<div class="capybara-container"><div class="capybara dancing"><div class="capy-head"><div class="capy-ear left"></div><div class="capy-ear right"></div><div class="capy-eye left"><div class="capy-eye-shine"></div></div><div class="capy-eye right"><div class="capy-eye-shine"></div></div><div class="capy-snout"><div class="capy-nose"></div></div><div class="capy-smile"></div></div><div class="capy-body"></div><div class="capy-legs"><div class="capy-leg"></div><div class="capy-leg"></div><div class="capy-leg"></div><div class="capy-leg"></div></div></div></div>`;
+const SAD_CAPYBARA_HTML = `<div class="capybara-container"><div class="capybara sad"><div class="capy-head"><div class="capy-ear left"></div><div class="capy-ear right"></div><div class="capy-eye left"><div class="capy-eye-shine"></div></div><div class="capy-eye right"><div class="capy-eye-shine"></div></div><div class="capy-snout"><div class="capy-nose"></div></div><div class="capy-smile"></div><div class="capy-tear" style="opacity:1"></div></div><div class="capy-body"></div><div class="capy-legs"><div class="capy-leg"></div><div class="capy-leg"></div><div class="capy-leg"></div><div class="capy-leg"></div></div></div></div>`;
+
+// ===== PERSISTENCE =====
+function saveState() { localStorage.setItem('capyMathGame', JSON.stringify(state)); }
+function loadState() {
+  const s = localStorage.getItem('capyMathGame');
+  if (s) { state = JSON.parse(s); state.stats = {...DEFAULT_STATE.stats,...state.stats}; if(!state.ownedItems) state.ownedItems=[]; if(!state.masteryGrid) state.masteryGrid={}; }
+  else state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+}
+
+// ===== HELPERS =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='hub-screen') renderHub();
+  if(id==='report-screen') renderReport();
+  if(id==='shop-screen') renderShop();
+}
+
+function getCapyFact() { return CAPY_FACTS[factIndex++ % CAPY_FACTS.length]; }
+
+function addPoints(pts) { state.totalPoints += pts; saveState(); }
+
+function updateMastery(a, b, correct) {
+  const key = `${Math.min(a,b)}x${Math.max(a,b)}`;
+  if (!state.masteryGrid[key]) state.masteryGrid[key] = {attempts:0,correct:0};
+  state.masteryGrid[key].attempts++;
+  if (correct) state.masteryGrid[key].correct++;
+  state.stats.totalQuestions++;
+  if (correct) state.stats.totalCorrect++;
+  saveState();
+}
+
+function showConfetti() {
+  confetti({particleCount:80,spread:70,origin:{y:0.6},colors:['#FFB6C1','#DDA0DD','#87CEEB','#98D8A0','#FFD700']});
+}
+
+function bigConfetti() {
+  confetti({particleCount:150,spread:100,origin:{y:0.5},colors:['#FFB6C1','#DDA0DD','#87CEEB','#98D8A0','#FFD700']});
+  setTimeout(()=>{confetti({particleCount:80,angle:60,spread:60,origin:{x:0}});confetti({particleCount:80,angle:120,spread:60,origin:{x:1}});},500);
+}
+
+function colorQuestion(a, b) {
+  return `<span class="q-num ${COLORS[a%8]}">${a}</span> <span class="q-op">×</span> <span class="q-num ${COLORS[b%8]}">${b}</span> <span class="q-op">=</span> <span class="q-op">?</span>`;
+}
+
+function shuffle(arr) { for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];} return arr; }
+
+function generatePairs(tables, count) {
+  const pairs = []; const used = new Set();
+  const multipliers = [2,3,4,5,6,7,8,9,10];
+  while (pairs.length < count) {
+    const a = tables[Math.floor(Math.random()*tables.length)];
+    const b = multipliers[Math.floor(Math.random()*multipliers.length)];
+    const key = `${Math.min(a,b)}x${Math.max(a,b)}`;
+    if (used.has(key)) continue;
+    used.add(key);
+    pairs.push({a, b, answer: a*b});
+  }
+  return pairs;
+}
+
+function generateChoices(correct) {
+  const choices = new Set([correct]);
+  while(choices.size<4){const w=correct+Math.floor(Math.random()*20)-10;if(w>0&&w!==correct) choices.add(w);}
+  return shuffle([...choices]);
+}
+
+function exitGame() {
+  // Clean up any running game intervals
+  if(window._gameInterval) { clearInterval(window._gameInterval); window._gameInterval=null; }
+  if(window._gameRAF) { cancelAnimationFrame(window._gameRAF); window._gameRAF=null; }
+  showScreen('hub-screen');
+}
+
+// ===== WELCOME =====
+let selectedPalette = 'palette-rose';
+function selectPalette(btn) {
+  document.querySelectorAll('.palette-option').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedPalette = btn.dataset.palette;
+  document.body.className = selectedPalette;
+}
+function startGame() {
+  const name = document.getElementById('capy-name-input').value.trim();
+  if(!name){document.getElementById('capy-name-input').style.borderColor='#E57373';return;}
+  state.capybaraName=name; state.colorPalette=selectedPalette; saveState();
+  document.body.className=selectedPalette;
+  showScreen('capy-desc-screen');
+}
+function skipCapyAI() {
+  showScreen('hub-screen');
+}
+
+// ===== HUB =====
+function renderHub() {
+  document.body.className = state.colorPalette;
+  document.getElementById('hub-capy-name').textContent = state.capybaraName;
+  document.getElementById('hub-points').textContent = state.totalPoints;
+  SHOP_ITEMS.forEach(item => {
+    const el = document.getElementById(item.accessoryId);
+    if(el) el.style.display = state.ownedItems.includes(item.id)?'block':'none';
+  });
+  // Always show reset/design button
+  document.getElementById('reset-capy-btn').style.display = 'flex';
+  // Show AI capybara image if available, otherwise CSS capybara
+  if(state.hasAICapy) {
+    document.getElementById('hub-capybara').style.display = 'none';
+    const hubImg = document.getElementById('hub-capy-img');
+    hubImg.style.display = 'block';
+    getCapyPoseByKey('hub').then(url => { if(url) hubImg.src = url; });
+  } else {
+    document.getElementById('hub-capybara').style.display = 'block';
+    document.getElementById('hub-capy-img').style.display = 'none';
+  }
+}
+
+// ===== NUMBER PILLS =====
+let selectedNumbers = []; // empty = "all"
+
+function togglePill(btn) {
+  const num = btn.dataset.num;
+  if(num === 'all') {
+    // "הכל" deselects everything else
+    selectedNumbers = [];
+    document.querySelectorAll('.number-pill').forEach(p => p.classList.remove('selected'));
+    btn.classList.add('selected');
+  } else {
+    // Deselect "הכל"
+    document.querySelector('.number-pill.pill-all').classList.remove('selected');
+    const n = parseInt(num);
+    if(selectedNumbers.includes(n)) {
+      selectedNumbers = selectedNumbers.filter(x => x !== n);
+      btn.classList.remove('selected');
+    } else {
+      selectedNumbers.push(n);
+      btn.classList.add('selected');
+    }
+    // If nothing selected, revert to "הכל"
+    if(selectedNumbers.length === 0) {
+      document.querySelector('.number-pill.pill-all').classList.add('selected');
+    }
+  }
+}
+
+function getSelectedTables() {
+  if(selectedNumbers.length === 0) return null; // "all" mode
+  return [...selectedNumbers];
+}
+
+// ===== GAME SELECTION =====
+let currentGameType = '';
+let currentTables = [];
+
+function selectGame(type) {
+  currentGameType = type;
+  const tables = getSelectedTables();
+  if(tables) {
+    // Specific numbers selected — skip level selector, go straight to game
+    startSelectedGame(tables);
+  } else {
+    // "הכל" mode — show level selector
+    document.getElementById('stage-game-title').textContent = {
+      quiz:'🎯 חידון', matching:'🔗 התאמת קווים', shooter:'🍬 רובה סוכריות',
+      bubbles:'🫧 בועות פיצוץ', table:'📋 מילוי טבלה', memory:'🃏 זיכרון',
+      race:'⏱️ מירוץ זמן', puzzle:'🧩 חידת תמונה'
+    }[type];
+    const container = document.getElementById('stage-select-container');
+    container.innerHTML = '';
+    STAGES.forEach(stage => {
+      const card = document.createElement('div');
+      card.className = 'stage-card';
+      card.innerHTML = `<div class="stage-icon">${stage.icon}</div><div class="stage-info"><h3>${stage.name}</h3><p>${stage.desc}</p></div>`;
+      card.onclick = () => startSelectedGame(stage.tables);
+      container.appendChild(card);
+    });
+    showScreen('stage-screen');
+  }
+}
+
+function startSelectedGame(tables) {
+  currentTables = tables;
+  switch(currentGameType) {
+    case 'quiz': startQuiz(tables); break;
+    case 'matching': startMatching(tables); break;
+    case 'bubbles': startBubbles(tables); break;
+    case 'shooter': startShooter(tables); break;
+    case 'table': startFillTable(tables); break;
+    case 'memory': startMemory(tables); break;
+    case 'race': startRace(tables); break;
+    case 'puzzle': startPuzzle(tables); break;
+  }
+}
+
+// ===== 1. QUIZ =====
+let currentQuiz = null;
+
+function startQuiz(tables) {
+  currentQuiz = {questions:generatePairs(tables,5),currentQ:0,correctFirst:0,totalPoints:0,streak:0,attempts:0};
+  showScreen('quiz-screen');
+  showQuizQuestion();
+}
+
+function showQuizQuestion() {
+  const q=currentQuiz.questions[currentQuiz.currentQ]; currentQuiz.attempts=0;
+  document.getElementById('quiz-progress').style.width=(currentQuiz.currentQ/currentQuiz.questions.length*100)+'%';
+  updateStreakDisplay();
+  document.getElementById('question-display').innerHTML=colorQuestion(q.a,q.b);
+  const input=document.getElementById('answer-input');input.value='';input.disabled=false;input.focus();
+  const grid=document.getElementById('choices-grid');grid.innerHTML='';
+  generateChoices(q.answer).forEach(c=>{
+    const btn=document.createElement('button');btn.className='choice-btn';btn.textContent=c;
+    btn.onclick=()=>checkQuizAnswer(c,btn);grid.appendChild(btn);
+  });
+  document.getElementById('feedback-area').innerHTML='';
+}
+
+function updateStreakDisplay() {
+  const d=document.getElementById('streak-display');
+  if(currentQuiz.streak>=3){const m=currentQuiz.streak>=5?3:2;d.textContent=`🔥 רצף של ${currentQuiz.streak}! (x${m} בונוס)`;d.className='streak-display active';}
+  else if(currentQuiz.streak>0){d.textContent=`רצף: ${currentQuiz.streak}`;d.className='streak-display';}
+  else{d.textContent='';d.className='streak-display';}
+}
+
+function submitTypedAnswer(){const v=parseInt(document.getElementById('answer-input').value);if(!isNaN(v))checkQuizAnswer(v,null);}
+
+function checkQuizAnswer(answer, btnEl) {
+  const q=currentQuiz.questions[currentQuiz.currentQ]; currentQuiz.attempts++;
+  if(answer===q.answer){
+    if(btnEl)btnEl.classList.add('correct');
+    else document.querySelectorAll('.choice-btn').forEach(b=>{if(parseInt(b.textContent)===q.answer)b.classList.add('correct');});
+    document.querySelectorAll('.choice-btn').forEach(b=>b.disabled=true);
+    document.getElementById('answer-input').disabled=true;
+    let pts=currentQuiz.attempts===1?10:currentQuiz.attempts===2?5:2;
+    const mult=currentQuiz.streak>=5?3:currentQuiz.streak>=3?2:1; pts*=mult;
+    currentQuiz.streak++; if(currentQuiz.attempts===1)currentQuiz.correctFirst++;
+    currentQuiz.totalPoints+=pts; addPoints(pts);
+    updateMastery(q.a,q.b,true); if(currentQuiz.attempts===1)state.stats.totalFirstTry++;
+    if(currentQuiz.streak>state.stats.longestStreak)state.stats.longestStreak=currentQuiz.streak;
+    saveState(); showConfetti();
+    const fact=getCapyFact();
+    getCapyFeedbackHTML('correct').then(capyHTML => {
+      document.getElementById('feedback-area').innerHTML=`
+        ${capyHTML}<div class="feedback-text correct-text">נכון! 🎉</div>
+        <div class="points-earned">+${pts} נקודות${mult>1?` (x${mult} בונוס!)`:''}</div>
+        <div class="capybara-fact">🐹 <strong>עובדה:</strong> ${fact}</div>
+        <button class="btn btn-next" onclick="nextQuizQuestion()">השאלה הבאה ←</button>`;
+    });
+  } else {
+    if(btnEl){btnEl.classList.add('wrong');btnEl.disabled=true;}
+    currentQuiz.streak=0; updateMastery(q.a,q.b,false);
+    document.getElementById('answer-input').value=''; updateStreakDisplay();
+    getCapyFeedbackHTML('wrong').then(capyHTML => {
+      document.getElementById('feedback-area').innerHTML=`${capyHTML}<div class="feedback-text wrong-text">לא נכון... נסי שוב! 💪</div>`;
+    });
+  }
+}
+
+function nextQuizQuestion() {
+  currentQuiz.currentQ++;
+  if(currentQuiz.currentQ<currentQuiz.questions.length) showQuizQuestion();
+  else finishGame(currentQuiz.correctFirst,currentQuiz.questions.length,currentQuiz.totalPoints);
+}
+
+function finishGame(correct, total, totalPts) {
+  const pct=correct/total; const stars=pct>=0.9?3:pct>=0.7?2:1;
+  document.getElementById('complete-stars').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);
+  document.getElementById('complete-score').textContent=`ענית נכון ${correct} מתוך ${total}!`;
+  document.getElementById('complete-points-earned').textContent=`+${totalPts} נקודות!`;
+  showScreen('complete-screen'); bigConfetti();
+}
+
+// ===== 2. MATCHING =====
+let matchState = {};
+function startMatching(tables) {
+  const pairs = generatePairs(tables, 5);
+  matchState = {pairs, connections:{}, selectedExercise:null, totalPoints:0};
+  const container = document.getElementById('matching-columns');
+  const exercises = pairs.map((p,i) => ({text:`${p.a} × ${p.b}`, idx:i}));
+  const answers = shuffle(pairs.map((p,i) => ({text:p.answer, idx:i})));
+  container.innerHTML = `
+    <div class="matching-col" id="match-exercises">${exercises.map(e=>`<div class="match-item exercise" data-idx="${e.idx}" onclick="selectMatchItem(this,'exercise')">${e.text}</div>`).join('')}</div>
+    <div class="matching-col" id="match-answers">${answers.map(a=>`<div class="match-item answer" data-idx="${a.idx}" onclick="selectMatchItem(this,'answer')">${a.text}</div>`).join('')}</div>`;
+  document.getElementById('matching-svg').innerHTML='';
+  document.getElementById('check-matching-btn').style.display='none';
+  document.getElementById('matching-feedback').innerHTML='';
+  showScreen('matching-screen');
+}
+
+function selectMatchItem(el, type) {
+  if(el.classList.contains('matched-correct')||el.classList.contains('matched-wrong')) return;
+  if(type==='exercise') {
+    document.querySelectorAll('.match-item.exercise').forEach(e=>e.classList.remove('selected'));
+    el.classList.add('selected');
+    matchState.selectedExercise = parseInt(el.dataset.idx);
+  } else if(matchState.selectedExercise !== null) {
+    const exIdx = matchState.selectedExercise;
+    const anIdx = parseInt(el.dataset.idx);
+    matchState.connections[exIdx] = anIdx;
+    document.querySelectorAll('.match-item.exercise').forEach(e=>e.classList.remove('selected'));
+    matchState.selectedExercise = null;
+    drawMatchLines();
+    if(Object.keys(matchState.connections).length === matchState.pairs.length) {
+      document.getElementById('check-matching-btn').style.display='inline-block';
+    }
+  }
+}
+
+function drawMatchLines() {
+  const svg = document.getElementById('matching-svg');
+  const container = document.getElementById('matching-container');
+  const rect = container.getBoundingClientRect();
+  svg.setAttribute('viewBox',`0 0 ${rect.width} ${rect.height}`);
+  svg.innerHTML = '';
+  for(const [exIdx, anIdx] of Object.entries(matchState.connections)) {
+    const exEl = document.querySelector(`.match-item.exercise[data-idx="${exIdx}"]`);
+    const anEl = document.querySelector(`.match-item.answer[data-idx="${anIdx}"]`);
+    if(!exEl||!anEl) continue;
+    const exR=exEl.getBoundingClientRect(), anR=anEl.getBoundingClientRect();
+    const x1=exR.left-rect.left, y1=exR.top-rect.top+exR.height/2;
+    const x2=anR.right-rect.left, y2=anR.top-rect.top+anR.height/2;
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',x1);line.setAttribute('y1',y1);line.setAttribute('x2',x2);line.setAttribute('y2',y2);
+    line.setAttribute('stroke','var(--secondary)');line.setAttribute('data-ex',exIdx);
+    svg.appendChild(line);
+  }
+}
+
+function checkMatching() {
+  let correct = 0;
+  for(const [exIdx, anIdx] of Object.entries(matchState.connections)) {
+    const isCorrect = parseInt(exIdx) === parseInt(anIdx);
+    const exEl = document.querySelector(`.match-item.exercise[data-idx="${exIdx}"]`);
+    const anEl = document.querySelector(`.match-item.answer[data-idx="${anIdx}"]`);
+    const line = document.querySelector(`#matching-svg line[data-ex="${exIdx}"]`);
+    if(isCorrect) {
+      correct++;exEl.classList.add('matched-correct');anEl.classList.add('matched-correct');
+      if(line) line.setAttribute('stroke','#4CAF50');
+      const p=matchState.pairs[exIdx]; updateMastery(p.a,p.b,true);
+    } else {
+      exEl.classList.add('matched-wrong');anEl.classList.add('matched-wrong');
+      if(line) line.setAttribute('stroke','#E57373');
+      const p=matchState.pairs[exIdx]; updateMastery(p.a,p.b,false);
+    }
+  }
+  const pts = correct * 10; addPoints(pts); matchState.totalPoints=pts;
+  document.getElementById('check-matching-btn').style.display='none';
+  showConfetti();
+  document.getElementById('matching-feedback').innerHTML=`
+    <div class="feedback-text correct-text">${correct} מתוך ${matchState.pairs.length} נכון!</div>
+    <div class="points-earned">+${pts} נקודות</div>
+    <button class="btn btn-next" onclick="finishGame(${correct},${matchState.pairs.length},${pts})">המשך ←</button>`;
+}
+
+// ===== 3. BUBBLES =====
+let bubbleState = {};
+function startBubbles(tables) {
+  bubbleState = {pairs:generatePairs(tables,8),currentQ:0,correctCount:0,totalPoints:0};
+  showScreen('bubbles-screen');
+  showBubbleQuestion();
+}
+
+function showBubbleQuestion() {
+  if(bubbleState.currentQ >= bubbleState.pairs.length) {
+    finishGame(bubbleState.correctCount,bubbleState.pairs.length,bubbleState.totalPoints); return;
+  }
+  const q = bubbleState.pairs[bubbleState.currentQ];
+  document.getElementById('bubble-question').innerHTML = colorQuestion(q.a, q.b);
+  document.getElementById('bubble-progress').style.width=(bubbleState.currentQ/bubbleState.pairs.length*100)+'%';
+  document.getElementById('bubble-feedback').innerHTML='';
+  const arena = document.getElementById('bubbles-arena');
+  arena.innerHTML = '';
+  const answers = new Set([q.answer]);
+  while(answers.size < 6) { const w=q.answer+Math.floor(Math.random()*20)-10; if(w>0) answers.add(w); }
+  const bubbleColors = ['#FFB6C1','#DDA0DD','#87CEEB','#98D8A0','#FFCBA4','#C9B1FF'];
+  // Place bubbles in a grid to avoid overlap
+  const positions = [];
+  const cols = 3, rows = 2;
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) positions.push({x:5+c*32+Math.random()*10, y:5+r*42+Math.random()*10});
+  shuffle(positions);
+  shuffle([...answers]).forEach((val,i) => {
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    const size = 60+Math.random()*20;
+    const pos = positions[i];
+    bubble.style.cssText = `width:${size}px;height:${size}px;background:${bubbleColors[i%6]};
+      left:${pos.x}%;top:${pos.y}%;color:var(--text);`;
+    bubble.textContent = val;
+    bubble.onclick = () => popBubble(bubble, val, q);
+    const dur = 4+Math.random()*3;
+    bubble.style.animation = `float${i%6} ${dur}s ease-in-out infinite ${Math.random()*2}s`;
+    arena.appendChild(bubble);
+  });
+}
+
+function popBubble(el, val, q) {
+  if(el.classList.contains('popping')) return;
+  if(val === q.answer) {
+    el.classList.add('popping');
+    showConfetti();
+    bubbleState.correctCount++; const pts=10; bubbleState.totalPoints+=pts; addPoints(pts);
+    updateMastery(q.a,q.b,true);
+    const fact = getCapyFact();
+    document.getElementById('bubble-feedback').innerHTML=`
+      <div class="feedback-text correct-text">נכון! 🎉 +${pts}</div>
+      <div class="capybara-fact">🐹 ${fact}</div>
+      <button class="btn btn-next" onclick="bubbleState.currentQ++;showBubbleQuestion()">הבא ←</button>`;
+  } else {
+    el.classList.add('wrong-shake');
+    updateMastery(q.a,q.b,false);
+    const penalty = 3;
+    bubbleState.totalPoints = Math.max(0, bubbleState.totalPoints - penalty);
+    addPoints(-penalty);
+    el.style.opacity = '0.4';
+    el.style.pointerEvents = 'none';
+    document.getElementById('bubble-feedback').innerHTML=`<div class="feedback-text wrong-text">לא נכון! -${penalty} נקודות 😢</div>`;
+    setTimeout(()=>{el.classList.remove('wrong-shake');},400);
+  }
+}
+
+// ===== 4. SHOOTER =====
+let shooterState = {};
+function startShooter(tables) {
+  shooterState = {pairs:generatePairs(tables,6),currentQ:0,correctCount:0,totalPoints:0,fallingAnswers:[],cannonX:50,active:true};
+  showScreen('shooter-screen');
+  showShooterQuestion();
+  // Cannon movement
+  const arena = document.getElementById('shooter-arena');
+  arena.onmousemove = (e) => {
+    const rect=arena.getBoundingClientRect();
+    shooterState.cannonX = ((e.clientX-rect.left)/rect.width)*100;
+    document.getElementById('cannon').style.left = shooterState.cannonX+'%';
+  };
+  arena.ontouchmove = (e) => {
+    const rect=arena.getBoundingClientRect();
+    const touch = e.touches[0];
+    shooterState.cannonX = ((touch.clientX-rect.left)/rect.width)*100;
+    document.getElementById('cannon').style.left = shooterState.cannonX+'%';
+    e.preventDefault();
+  };
+  arena.onclick = shootCannon;
+}
+
+function showShooterQuestion() {
+  if(shooterState.currentQ >= shooterState.pairs.length) {
+    shooterState.active=false;
+    finishGame(shooterState.correctCount,shooterState.pairs.length,shooterState.totalPoints); return;
+  }
+  const q = shooterState.pairs[shooterState.currentQ];
+  document.getElementById('shooter-question').innerHTML = colorQuestion(q.a, q.b);
+  document.getElementById('shooter-progress').style.width=(shooterState.currentQ/shooterState.pairs.length*100)+'%';
+  document.getElementById('shooter-feedback').innerHTML='';
+  // Create falling answers
+  const arena = document.getElementById('shooter-arena');
+  arena.querySelectorAll('.falling-answer,.candy-bullet').forEach(e=>e.remove());
+  const answers = new Set([q.answer]);
+  while(answers.size<4){const w=q.answer+Math.floor(Math.random()*20)-10;if(w>0)answers.add(w);}
+  const cols = ['#F8BBD0','#E1BEE7','#BBDEFB','#B2DFDB'];
+  shuffle([...answers]).forEach((val,i) => {
+    const el = document.createElement('div');
+    el.className = 'falling-answer';
+    el.textContent = val;
+    el.dataset.value = val;
+    el.style.left = (10+i*22)+'%';
+    el.style.top = '-70px';
+    el.style.background = cols[i%4];
+    el.style.color = 'var(--text)';
+    arena.appendChild(el);
+  });
+  shooterState.fallingAnswers = arena.querySelectorAll('.falling-answer');
+  animateFalling(q);
+}
+
+function animateFalling(q) {
+  let startTime = Date.now();
+  const duration = 8000;
+  const arena = document.getElementById('shooter-arena');
+  const arenaH = arena.offsetHeight;
+  function frame() {
+    if(!shooterState.active) return;
+    const elapsed = Date.now()-startTime;
+    const pct = Math.min(elapsed/duration, 1);
+    shooterState.fallingAnswers.forEach(el => {
+      if(el.dataset.hit) return;
+      el.style.top = (-70 + pct*(arenaH+70))+'px';
+    });
+    if(pct>=1) {
+      // Time's up for this question
+      updateMastery(q.a,q.b,false);
+      shooterState.currentQ++;
+      setTimeout(()=>showShooterQuestion(),500);
+      return;
+    }
+    window._gameRAF = requestAnimationFrame(frame);
+  }
+  window._gameRAF = requestAnimationFrame(frame);
+}
+
+function shootCannon() {
+  const arena = document.getElementById('shooter-arena');
+  const bullet = document.createElement('div');
+  bullet.className = 'candy-bullet';
+  bullet.textContent = '🍭';
+  bullet.style.left = shooterState.cannonX+'%';
+  bullet.style.bottom = '50px';
+  arena.appendChild(bullet);
+  // Animate bullet up
+  let y = 50;
+  const q = shooterState.pairs[shooterState.currentQ];
+  const iv = setInterval(() => {
+    y += 8;
+    bullet.style.bottom = y+'px';
+    // Check collision with falling answers
+    const bRect = bullet.getBoundingClientRect();
+    shooterState.fallingAnswers.forEach(el => {
+      if(el.dataset.hit) return;
+      const eRect = el.getBoundingClientRect();
+      if(bRect.left<eRect.right && bRect.right>eRect.left && bRect.top<eRect.bottom && bRect.bottom>eRect.top) {
+        el.dataset.hit='true';
+        const val = parseInt(el.dataset.value);
+        if(val === q.answer) {
+          el.style.background='var(--success)';
+          showConfetti();
+          const pts=10;shooterState.correctCount++;shooterState.totalPoints+=pts;addPoints(pts);
+          updateMastery(q.a,q.b,true);
+          if(window._gameRAF)cancelAnimationFrame(window._gameRAF);
+          document.getElementById('shooter-feedback').innerHTML=`
+            <div class="feedback-text correct-text">פגיעה! 🎉 +${pts}</div>
+            <button class="btn btn-next" onclick="shooterState.currentQ++;showShooterQuestion()">הבא ←</button>`;
+        } else {
+          el.style.opacity='0.3';
+        }
+        bullet.remove(); clearInterval(iv);
+      }
+    });
+    if(y > arena.offsetHeight) { bullet.remove(); clearInterval(iv); }
+  }, 20);
+}
+
+// ===== 5. FILL TABLE =====
+let tableState = {};
+function startFillTable(tables) {
+  const size = tables.length >= 8 ? 6 : 5;
+  const rows = shuffle([...tables]).slice(0,size);
+  const cols = shuffle([2,3,4,5,6,7,8,9,10]).slice(0,size);
+  const emptyCells = [];
+  const grid = [];
+  for(let r=0;r<rows.length;r++) {
+    grid[r] = [];
+    for(let c=0;c<cols.length;c++) {
+      const val = rows[r]*cols[c];
+      const empty = Math.random() < 0.5;
+      grid[r][c] = {row:rows[r],col:cols[c],val,empty,solved:false};
+      if(empty) emptyCells.push({r,c});
+    }
+  }
+  tableState = {grid,rows,cols,emptyCells,selectedCell:null,solvedCount:0,totalCells:emptyCells.length,totalPoints:0};
+  renderFillTable();
+  showScreen('table-screen');
+}
+
+function renderFillTable() {
+  const t=document.getElementById('fill-table');
+  let html='<tr><th>×</th>';
+  tableState.cols.forEach(c=>html+=`<th>${c}</th>`);
+  html+='</tr>';
+  tableState.grid.forEach((row,r)=>{
+    html+=`<tr><th>${tableState.rows[r]}</th>`;
+    row.forEach((cell,c)=>{
+      if(!cell.empty || cell.solved) {
+        html+=`<td class="${cell.solved?'correct-cell':'filled'}">${cell.val}</td>`;
+      } else {
+        const sel = tableState.selectedCell && tableState.selectedCell.r===r && tableState.selectedCell.c===c;
+        html+=`<td class="empty${sel?' editing':''}" onclick="selectTableCell(${r},${c})">${sel?'_':'?'}</td>`;
+      }
+    });
+    html+='</tr>';
+  });
+  t.innerHTML=html;
+  document.getElementById('table-status').textContent=`${tableState.solvedCount} / ${tableState.totalCells} תאים`;
+  if(tableState.selectedCell) {
+    const cell=tableState.grid[tableState.selectedCell.r][tableState.selectedCell.c];
+    document.getElementById('table-cell-label').textContent=`${cell.row} × ${cell.col} = `;
+    document.getElementById('table-input-area').style.display='flex';
+    document.getElementById('table-numpad').style.display='grid';
+    document.getElementById('table-answer').value='';
+    document.getElementById('table-answer').focus();
+  } else {
+    document.getElementById('table-input-area').style.display='none';
+    document.getElementById('table-numpad').style.display='none';
+  }
+}
+
+function selectTableCell(r,c) { tableState.selectedCell={r,c}; renderFillTable(); }
+
+function numpadPress(digit) { numpadTo('table-answer', digit); }
+function numpadDelete() { numpadDel('table-answer'); }
+function numpadTo(inputId, digit) {
+  const inp = document.getElementById(inputId);
+  if(inp.value.length < 3) inp.value += digit;
+}
+function numpadDel(inputId) {
+  const inp = document.getElementById(inputId);
+  inp.value = inp.value.slice(0,-1);
+}
+
+function submitTableAnswer() {
+  if(!tableState.selectedCell) return;
+  const {r,c}=tableState.selectedCell;
+  const cell=tableState.grid[r][c];
+  const val=parseInt(document.getElementById('table-answer').value);
+  if(isNaN(val)) return;
+  if(val===cell.val) {
+    cell.solved=true; tableState.solvedCount++; const pts=10; tableState.totalPoints+=pts; addPoints(pts);
+    updateMastery(cell.row,cell.col,true); tableState.selectedCell=null;
+    showConfetti();
+    renderFillTable();
+    if(tableState.solvedCount>=tableState.totalCells) {
+      setTimeout(()=>finishGame(tableState.solvedCount,tableState.totalCells,tableState.totalPoints),500);
+    }
+  } else {
+    updateMastery(cell.row,cell.col,false);
+    document.getElementById('table-answer').value='';
+    document.getElementById('table-feedback').innerHTML=`<div class="feedback-text wrong-text">לא נכון, נסי שוב!</div>`;
+    setTimeout(()=>document.getElementById('table-feedback').innerHTML='',1500);
+  }
+}
+
+// ===== 6. MEMORY =====
+let memoryState = {};
+function startMemory(tables) {
+  const pairs = generatePairs(tables, 6);
+  const cards = [];
+  pairs.forEach((p,i)=>{
+    cards.push({id:i,type:'exercise',text:`${p.a}×${p.b}`,pairId:i,a:p.a,b:p.b});
+    cards.push({id:i,type:'answer',text:String(p.answer),pairId:i,a:p.a,b:p.b});
+  });
+  memoryState = {cards:shuffle(cards),flipped:[],matched:0,attempts:0,totalPairs:pairs.length,totalPoints:0};
+  renderMemory();
+  showScreen('memory-screen');
+}
+
+const MATCH_EMOJIS = ['⭐','💖','🌈','🦋','🌸','🎀','✨','💎','🍬','🎵','🌟','🫧'];
+function renderMemory() {
+  const grid=document.getElementById('memory-grid');
+  grid.innerHTML='';
+  memoryState.cards.forEach((card,i)=>{
+    const el=document.createElement('div');
+    const isFlipped=memoryState.flipped.includes(i);
+    const isMatched=card.matched;
+    el.className='memory-card'+(isFlipped?' flipped':'')+(isMatched?' matched':'');
+    if(isMatched) {
+      const emoji = MATCH_EMOJIS[card.pairId % MATCH_EMOJIS.length];
+      el.innerHTML=`<div class="card-front">${card.text} ${emoji}</div>`;
+    } else {
+      el.innerHTML=`<div class="card-back">?</div><div class="card-front">${card.text}</div>`;
+      if(!isFlipped) el.onclick=()=>flipMemoryCard(i);
+    }
+    grid.appendChild(el);
+  });
+  document.getElementById('memory-status').textContent=`${memoryState.matched} / ${memoryState.totalPairs} זוגות | ניסיונות: ${memoryState.attempts}`;
+}
+
+function flipMemoryCard(idx) {
+  if(memoryState.flipped.length>=2) return;
+  if(memoryState.flipped.includes(idx)) return;
+  memoryState.flipped.push(idx);
+  renderMemory();
+  if(memoryState.flipped.length===2) {
+    memoryState.attempts++;
+    const [i1,i2]=memoryState.flipped;
+    const c1=memoryState.cards[i1],c2=memoryState.cards[i2];
+    if(c1.pairId===c2.pairId && c1.type!==c2.type) {
+      // Match!
+      c1.matched=true;c2.matched=true;memoryState.matched++;
+      const pts=15;memoryState.totalPoints+=pts;addPoints(pts);
+      updateMastery(c1.a,c1.b,true);
+      showConfetti();
+      memoryState.flipped=[];
+      setTimeout(()=>{
+        renderMemory();
+        if(memoryState.matched>=memoryState.totalPairs){
+          const bonus=Math.max(0,50-memoryState.attempts*2);addPoints(bonus);memoryState.totalPoints+=bonus;
+          setTimeout(()=>finishGame(memoryState.matched,memoryState.totalPairs,memoryState.totalPoints),500);
+        }
+      },600);
+    } else {
+      setTimeout(()=>{memoryState.flipped=[];renderMemory();},1000);
+    }
+  }
+}
+
+// ===== 7. TIME RACE =====
+let raceState = {};
+function startRace(tables) {
+  raceState = {tables,timeLeft:60,correct:0,totalPoints:0,active:true,currentQ:null};
+  showScreen('race-screen');
+  document.getElementById('race-timer').textContent='60';
+  document.getElementById('race-correct').textContent='0';
+  document.getElementById('race-runner').style.right='5px';
+  document.getElementById('race-feedback').innerHTML='';
+  nextRaceQuestion();
+  window._gameInterval = setInterval(()=>{
+    raceState.timeLeft--;
+    document.getElementById('race-timer').textContent=raceState.timeLeft;
+    if(raceState.timeLeft<=0) {
+      clearInterval(window._gameInterval);window._gameInterval=null;raceState.active=false;
+      if(raceState.correct>state.stats.bestRace){state.stats.bestRace=raceState.correct;saveState();}
+      document.getElementById('race-feedback').innerHTML=`
+        <h2>⏱️ נגמר הזמן!</h2>
+        <div class="feedback-text correct-text">${raceState.correct} תשובות נכונות!</div>
+        <div class="points-earned">+${raceState.totalPoints} נקודות</div>
+        <div style="margin:10px 0;color:var(--text-light);">שיא: ${state.stats.bestRace}</div>
+        <button class="btn btn-primary" onclick="showScreen('hub-screen')">→ חזרה</button>`;
+      bigConfetti();
+    }
+  },1000);
+  document.getElementById('race-input').focus();
+}
+
+function nextRaceQuestion() {
+  const a=raceState.tables[Math.floor(Math.random()*raceState.tables.length)];
+  const b=Math.floor(Math.random()*9)+2;
+  raceState.currentQ={a,b,answer:a*b};
+  document.getElementById('race-question').innerHTML=colorQuestion(a,b);
+  document.getElementById('race-input').value='';
+  document.getElementById('race-input').focus();
+}
+
+function submitRaceAnswer() {
+  if(!raceState.active) return;
+  const val=parseInt(document.getElementById('race-input').value);
+  if(isNaN(val)) return;
+  const q=raceState.currentQ;
+  if(val===q.answer) {
+    raceState.correct++; const pts=5; raceState.totalPoints+=pts; addPoints(pts);
+    updateMastery(q.a,q.b,true);
+    document.getElementById('race-correct').textContent=raceState.correct;
+    // Move capybara
+    const pct=Math.min(raceState.correct*5,90);
+    document.getElementById('race-runner').style.right=pct+'%';
+    showConfetti();
+  } else {
+    updateMastery(q.a,q.b,false);
+  }
+  nextRaceQuestion();
+}
+
+// ===== 8. PUZZLE =====
+let puzzleState = {};
+function startPuzzle(tables) {
+  const pairs = generatePairs(tables, 9);
+  // Capybara puzzle pieces (emojis forming a picture)
+  const pieces = ['🌿','🌸','☀️','🐹','💕','🌊','🦋','🌈','⭐'];
+  puzzleState = {pairs,currentQ:0,revealed:[],totalPoints:0,pieces};
+  showScreen('puzzle-screen');
+  renderPuzzleGrid();
+  showPuzzleQuestion();
+}
+
+function renderPuzzleGrid() {
+  const grid=document.getElementById('puzzle-grid');
+  grid.innerHTML='';
+  puzzleState.pieces.forEach((emoji,i)=>{
+    const el=document.createElement('div');
+    const isRevealed=puzzleState.revealed.includes(i);
+    el.className='puzzle-piece'+(isRevealed?' revealed':' hidden');
+    if(isRevealed) el.textContent=emoji;
+    grid.appendChild(el);
+  });
+}
+
+function showPuzzleQuestion() {
+  if(puzzleState.currentQ>=puzzleState.pairs.length) {
+    getCapyFeedbackHTML('correct').then(capyHTML => {
+      document.getElementById('puzzle-feedback').innerHTML=`
+        ${capyHTML}<div class="feedback-text correct-text">גילית את כל התמונה! 🎉</div>
+        <div class="points-earned">+${puzzleState.totalPoints} נקודות</div>
+        <button class="btn btn-primary" onclick="showScreen('hub-screen')">→ חזרה</button>`;
+    });
+    bigConfetti(); return;
+  }
+  const q=puzzleState.pairs[puzzleState.currentQ];
+  document.getElementById('puzzle-question').innerHTML=colorQuestion(q.a,q.b);
+  document.getElementById('puzzle-progress').style.width=(puzzleState.currentQ/puzzleState.pairs.length*100)+'%';
+  document.getElementById('puzzle-input').value='';
+  document.getElementById('puzzle-input').focus();
+  document.getElementById('puzzle-feedback').innerHTML='';
+}
+
+function submitPuzzleAnswer() {
+  const val=parseInt(document.getElementById('puzzle-input').value);
+  if(isNaN(val)) return;
+  const q=puzzleState.pairs[puzzleState.currentQ];
+  if(val===q.answer) {
+    puzzleState.revealed.push(puzzleState.currentQ);
+    const pts=10;puzzleState.totalPoints+=pts;addPoints(pts);
+    updateMastery(q.a,q.b,true);
+    showConfetti(); renderPuzzleGrid();
+    puzzleState.currentQ++;
+    const fact=getCapyFact();
+    document.getElementById('puzzle-feedback').innerHTML=`
+      <div class="feedback-text correct-text">נכון! 🎉 +${pts}</div>
+      <div class="capybara-fact">🐹 ${fact}</div>
+      <button class="btn btn-next" onclick="showPuzzleQuestion()">הבא ←</button>`;
+  } else {
+    updateMastery(q.a,q.b,false);
+    document.getElementById('puzzle-input').value='';
+    getCapyFeedbackHTML('wrong').then(capyHTML => {
+      document.getElementById('puzzle-feedback').innerHTML=`${capyHTML}<div class="feedback-text wrong-text">לא נכון... נסי שוב! 💪</div>`;
+    });
+  }
+}
+
+// ===== REPORT CARD =====
+function renderReport() {
+  let totalPairs=0,masteredPairs=0;
+  for(let i=1;i<=10;i++)for(let j=i;j<=10;j++){
+    totalPairs++;const d=state.masteryGrid[`${i}x${j}`];
+    if(d&&d.attempts>=3&&(d.correct/d.attempts)>=0.8) masteredPairs++;
+  }
+  document.getElementById('mastery-percent').textContent=Math.round(masteredPairs/totalPairs*100)+'%';
+  const sr=state.stats.totalQuestions>0?Math.round(state.stats.totalCorrect/state.stats.totalQuestions*100):0;
+  document.getElementById('stats-grid').innerHTML=`
+    <div class="stat-card"><div class="stat-value">${state.stats.totalQuestions}</div><div class="stat-label">סה"כ שאלות</div></div>
+    <div class="stat-card"><div class="stat-value">${sr}%</div><div class="stat-label">אחוז הצלחה</div></div>
+    <div class="stat-card"><div class="stat-value">${state.stats.longestStreak}</div><div class="stat-label">רצף הכי ארוך</div></div>
+    <div class="stat-card"><div class="stat-value">${state.totalPoints}</div><div class="stat-label">נקודות</div></div>`;
+  const table=document.getElementById('mastery-table');
+  let html='<tr><th>×</th>';for(let j=1;j<=10;j++)html+=`<th>${j}</th>`;html+='</tr>';
+  for(let i=1;i<=10;i++){
+    html+=`<tr><th>${i}</th>`;
+    for(let j=1;j<=10;j++){
+      const key=`${Math.min(i,j)}x${Math.max(i,j)}`;const d=state.masteryGrid[key];
+      let cls='mastery-none',text='-';
+      if(d&&d.attempts>0){const rate=d.correct/d.attempts;text=Math.round(rate*100)+'%';
+        if(d.attempts>=3&&rate>=0.8)cls='mastery-green';else if(rate>=0.5)cls='mastery-yellow';else cls='mastery-red';}
+      html+=`<td class="${cls}">${text}</td>`;
+    }html+='</tr>';
+  }
+  table.innerHTML=html;
+}
+
+// ===== SHOP =====
+function renderShop() {
+  document.getElementById('shop-points').textContent=state.totalPoints;
+  const grid=document.getElementById('shop-grid');grid.innerHTML='';
+  SHOP_ITEMS.forEach(item=>{
+    const owned=state.ownedItems.includes(item.id);const canAfford=state.totalPoints>=item.price;
+    const div=document.createElement('div');
+    div.className='shop-item'+(owned?' owned':(!canAfford?' too-expensive':''));
+    div.innerHTML=`<div class="shop-emoji">${item.emoji}</div><div class="shop-name">${item.name}</div>
+      ${owned?'<div class="shop-owned-badge">נרכש ✓</div>':`<div class="shop-price">⭐ ${item.price} נקודות</div>`}`;
+    if(!owned&&canAfford) div.onclick=()=>{state.totalPoints-=item.price;state.ownedItems.push(item.id);saveState();showConfetti();renderShop();};
+    grid.appendChild(div);
+  });
+}
+
+// ===== KEYBOARD SHORTCUTS =====
+document.addEventListener('keydown',(e)=>{
+  if(e.key==='Enter') {
+    const active=document.querySelector('.screen.active');
+    if(active?.id==='quiz-screen'&&!document.getElementById('answer-input').disabled) submitTypedAnswer();
+    else if(active?.id==='race-screen') submitRaceAnswer();
+    else if(active?.id==='table-screen') submitTableAnswer();
+    else if(active?.id==='puzzle-screen') submitPuzzleAnswer();
+    else if(active?.id==='welcome-screen') startGame();
+  }
+});
+
+// ===== INDEXEDDB =====
+const CAPY_DB = 'capyMediaDB';
+const CAPY_STORE = 'media';
+function openCapyDB() {
+  return new Promise((resolve,reject) => {
+    const req = indexedDB.open(CAPY_DB, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(CAPY_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function saveMedia(key, blob) {
+  const db = await openCapyDB();
+  return new Promise((resolve,reject) => {
+    const tx = db.transaction(CAPY_STORE,'readwrite');
+    tx.objectStore(CAPY_STORE).put(blob, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function getMedia(key) {
+  const db = await openCapyDB();
+  return new Promise((resolve,reject) => {
+    const tx = db.transaction(CAPY_STORE,'readonly');
+    const req = tx.objectStore(CAPY_STORE).get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function clearAllMedia() {
+  const db = await openCapyDB();
+  return new Promise((resolve,reject) => {
+    const tx = db.transaction(CAPY_STORE,'readwrite');
+    tx.objectStore(CAPY_STORE).clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// ===== AI CAPYBARA =====
+const GOOGLE_API_KEY = 'AIzaSyDMDvP1wPKjAJxaFalXNKlK8qC1tHLICXU';
+const IMAGE_STYLES = [
+  {name:'פיקסאר',prompt:'Pixar 3D animated style, cute round'},
+  {name:'אנימה',prompt:'anime style, big eyes, kawaii'},
+  {name:'קריקטורה',prompt:'cartoon style, bold outlines, funny'},
+  {name:'צבעי מים',prompt:'watercolor painting, soft, artistic'},
+  {name:'ריאליסטי',prompt:'photorealistic, lifelike, natural'},
+  {name:'פרוותי',prompt:'fluffy furry style, soft fur, adorable'},
+  {name:'רטרו',prompt:'retro pixel art style, 8-bit, cute'},
+  {name:'פנטזיה',prompt:'fantasy style, magical, sparkles, fairy tale'},
+  {name:'פופ ארט',prompt:'pop art style, bold colors, Andy Warhol inspired'},
+  {name:'ציור שמן',prompt:'oil painting style, classic, museum quality'}
+];
+const CAPY_POSES = [
+  {key:'hub', prompt:'standing and smiling, front facing, friendly pose'},
+  {key:'correct1', prompt:'jumping with joy, arms up, celebrating'},
+  {key:'correct2', prompt:'giving thumbs up, big smile, proud'},
+  {key:'correct3', prompt:'clapping hands, excited, cheerful'},
+  {key:'correct4', prompt:'wearing a gold medal, champion pose'},
+  {key:'correct5', prompt:'surrounded by stars and sparkles, magical'},
+  {key:'correct6', prompt:'doing a victory dance, one leg up'},
+  {key:'correct7', prompt:'holding a trophy, triumphant'},
+  {key:'wrong1', prompt:'looking sad, tears in eyes, disappointed'},
+  {key:'wrong2', prompt:'scratching head, confused, thinking'},
+  {key:'wrong3', prompt:'shrugging, oops expression, surprised'},
+  {key:'thinking', prompt:'wearing glasses, reading a book, studious'},
+  {key:'loading', prompt:'running fast, motion blur, energetic'},
+  {key:'shop', prompt:'wearing a top hat, fancy, surrounded by gifts'},
+  {key:'report', prompt:'wearing graduation cap, holding diploma, proud'}
+];
+const VIDEO_ACTIONS = [
+  {name:'רוקד',prompt:'dancing happily, joyful dance moves'},
+  {name:'ברייקדנס',prompt:'breakdancing, spinning on the floor, hip hop moves'},
+  {name:'קופץ',prompt:'jumping with joy, bouncing up and down excitedly'},
+  {name:'זורק קונפטי',prompt:'throwing confetti in the air, celebrating'},
+  {name:'בוכה',prompt:'crying sadly, tears falling, looking down'},
+  {name:'חיבוק',prompt:'giving a warm hug, arms open wide'},
+  {name:'מנופף',prompt:'waving hello, friendly wave'},
+  {name:'מסתובב',prompt:'spinning around in circles, dizzy and happy'},
+  {name:'יושב עצוב',prompt:'sitting down sadly, looking disappointed'},
+  {name:'כוכב',prompt:'doing a star pose, arms and legs spread, triumphant'}
+];
+
+let capyImages = []; // base64 images from Imagen
+let selectedCapyIndex = -1;
+
+async function generateCapyImages() {
+  const desc = document.getElementById('capy-desc-input').value.trim();
+  const userDesc = desc || 'a cute capybara';
+  const statusEl = document.getElementById('capy-gen-status');
+  const textEl = document.getElementById('capy-gen-text');
+  statusEl.style.display = 'block';
+  capyImages = new Array(IMAGE_STYLES.length).fill(null);
+  let completed = 0;
+
+  // Generate in batches of 3
+  for(let batch = 0; batch < IMAGE_STYLES.length; batch += 3) {
+    const batchStyles = IMAGE_STYLES.slice(batch, batch + 3);
+    const names = batchStyles.map(s => s.name).join(', ');
+    textEl.textContent = `מציירת קפיברות ${batch+1}-${Math.min(batch+3, IMAGE_STYLES.length)}/10 (${names})...`;
+
+    const promises = batchStyles.map(async (style, j) => {
+      const idx = batch + j;
+      try {
+        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict`, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json','x-goog-api-key':GOOGLE_API_KEY},
+          body: JSON.stringify({
+            instances: [{prompt: `${style.prompt}, ${userDesc}, capybara character, white background, friendly`}],
+            parameters: {sampleCount: 1}
+          })
+        });
+        const data = await resp.json();
+        const b64 = data.predictions?.[0]?.bytesBase64Encoded || data.generatedImages?.[0]?.image?.imageBytes;
+        if(b64) capyImages[idx] = {style: style.name, base64: b64};
+        else console.warn('Imagen response format:', JSON.stringify(data).slice(0,200));
+      } catch(err) { console.error('Imagen error:', err); }
+    });
+
+    await Promise.all(promises);
+    completed += batchStyles.length;
+  }
+
+  statusEl.style.display = 'none';
+  showCapyImageGrid();
+}
+
+function showCapyImageGrid() {
+  const grid = document.getElementById('capy-image-grid');
+  grid.innerHTML = '';
+  capyImages.forEach((img, i) => {
+    if(!img) return;
+    const div = document.createElement('div');
+    div.className = 'image-option';
+    div.innerHTML = `<img src="data:image/png;base64,${img.base64}"><div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.85);padding:4px 12px;border-radius:20px;font-size:0.85em;font-weight:bold;">${img.style}</div>`;
+    div.style.position = 'relative';
+    div.onclick = () => {
+      document.querySelectorAll('.image-option').forEach(o=>o.classList.remove('selected'));
+      div.classList.add('selected');
+      selectedCapyIndex = i;
+      document.getElementById('capy-select-btn').style.display = 'inline-block';
+    };
+    grid.appendChild(div);
+  });
+  showScreen('capy-select-screen');
+}
+
+async function confirmCapyImage() {
+  if(selectedCapyIndex < 0) return;
+  const img = capyImages[selectedCapyIndex];
+  if(!img) return;
+
+  // Save the selected base image
+  const imgBlob = await fetch(`data:image/png;base64,${img.base64}`).then(r=>r.blob());
+  await saveMedia('capyImage', imgBlob);
+  state.hasAICapy = true;
+  state.capyStyle = img.style;
+  state.capyStylePrompt = IMAGE_STYLES[selectedCapyIndex].prompt;
+  state.capyDesc = document.getElementById('capy-desc-input').value.trim() || 'a cute capybara';
+  saveState();
+
+  // Generate pose images + videos
+  showScreen('capy-videos-screen');
+  await generateCapyPosesAndVideos(img.base64);
+}
+
+async function generateCapyPosesAndVideos(imageBase64) {
+  const progressBar = document.getElementById('video-progress-bar');
+  const progressText = document.getElementById('video-progress-text');
+  const genText = document.getElementById('video-gen-text');
+  const totalSteps = CAPY_POSES.length + VIDEO_ACTIONS.length;
+  let completed = 0;
+
+  const stylePrompt = state.capyStylePrompt || IMAGE_STYLES[0].prompt;
+  const userDesc = state.capyDesc || 'a cute capybara';
+
+  // Phase 1: Generate pose images (batches of 3)
+  genText.textContent = 'מציירת תמונות של הקפיברה...';
+  for(let batch = 0; batch < CAPY_POSES.length; batch += 3) {
+    const batchPoses = CAPY_POSES.slice(batch, batch + 3);
+    genText.textContent = `🖌️ תמונות ${batch+1}-${Math.min(batch+3, CAPY_POSES.length)}/${CAPY_POSES.length}...`;
+
+    const promises = batchPoses.map(async (pose) => {
+      try {
+        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict`, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json','x-goog-api-key':GOOGLE_API_KEY},
+          body: JSON.stringify({
+            instances: [{prompt: `${stylePrompt}, ${userDesc}, capybara character, ${pose.prompt}, same character consistent style, white background`}],
+            parameters: {sampleCount: 1}
+          })
+        });
+        const data = await resp.json();
+        const b64 = data.predictions?.[0]?.bytesBase64Encoded || data.generatedImages?.[0]?.image?.imageBytes;
+        if(b64) {
+          const blob = await fetch(`data:image/png;base64,${b64}`).then(r=>r.blob());
+          await saveMedia(`capyPose_${pose.key}`, blob);
+        }
+      } catch(err) { console.error(`Pose ${pose.key} error:`, err); }
+    });
+
+    await Promise.all(promises);
+    completed += batchPoses.length;
+    updateGenProgress(completed, totalSteps, progressBar, progressText);
+  }
+
+  // Phase 2: Generate videos
+  genText.textContent = 'מייצרת סרטונים...';
+  for(let i = 0; i < VIDEO_ACTIONS.length; i++) {
+    const action = VIDEO_ACTIONS[i];
+    genText.textContent = `🎬 סרטון ${i+1}/${VIDEO_ACTIONS.length}: ${action.name}...`;
+    try {
+      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/veo-2.0-generate-001:predictLongRunning`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','x-goog-api-key':GOOGLE_API_KEY},
+        body: JSON.stringify({
+          instances: [{
+            prompt: `A cute capybara ${action.prompt}, short video, looping, fun animation`,
+            image: {bytesBase64Encoded: imageBase64, mimeType: 'image/png'}
+          }],
+          parameters: {aspectRatio:'9:16', durationSeconds: 5}
+        })
+      });
+      const opData = await resp.json();
+      const opName = opData.name;
+      if(!opName) { completed++; updateGenProgress(completed, totalSteps, progressBar, progressText); continue; }
+
+      for(let attempt = 0; attempt < 60; attempt++) {
+        await new Promise(r => setTimeout(r, 5000));
+        const pollResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/${opName}`, {
+          headers: {'x-goog-api-key': GOOGLE_API_KEY}
+        });
+        const pollData = await pollResp.json();
+        if(pollData.done) {
+          const videoUri = pollData.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri || pollData.response?.generatedSamples?.[0]?.video?.uri;
+          if(videoUri) {
+            const videoResp = await fetch(`${videoUri}&key=${GOOGLE_API_KEY}`);
+            const videoBlob = await videoResp.blob();
+            await saveMedia(`capyVideo_${i}`, videoBlob);
+          }
+          break;
+        }
+      }
+    } catch(err) { console.error(`Veo error ${action.name}:`, err); }
+    completed++;
+    updateGenProgress(completed, totalSteps, progressBar, progressText);
+  }
+
+  genText.textContent = 'הכל מוכן! 🎉';
+  setTimeout(() => showScreen('hub-screen'), 1500);
+}
+
+function updateGenProgress(n, total, bar, text) {
+  bar.style.width = (n/total*100)+'%';
+  text.textContent = `${n} / ${total}`;
+}
+
+function resetCapyStyle() {
+  showScreen('capy-desc-screen');
+}
+
+// Get capybara feedback HTML (video > pose image > CSS fallback)
+async function getCapyFeedbackHTML(type) {
+  if(!state.hasAICapy) return type==='correct' ? CAPYBARA_HTML : SAD_CAPYBARA_HTML;
+
+  // Try video first
+  const videoUrl = await getCapyVideoUrl(type);
+  if(videoUrl) return `<video class="video-feedback" src="${videoUrl}" autoplay loop muted playsinline></video>`;
+
+  // Try pose image
+  const imgUrl = await getCapyPoseUrl(type);
+  if(imgUrl) return `<img class="video-feedback" src="${imgUrl}" alt="קפיברה">`;
+
+  return type==='correct' ? CAPYBARA_HTML : SAD_CAPYBARA_HTML;
+}
+
+// Get a random video URL for feedback
+async function getCapyVideoUrl(type) {
+  const correctVideos = [0,1,2,3,6,7,9]; // dancing, breakdance, jumping, confetti, waving, spinning, star
+  const wrongVideos = [4,8]; // crying, sitting sad
+  const indices = type === 'correct' ? correctVideos : wrongVideos;
+  const idx = indices[Math.floor(Math.random()*indices.length)];
+  const blob = await getMedia(`capyVideo_${idx}`);
+  if(blob) return URL.createObjectURL(blob);
+  return null;
+}
+
+// Get a random pose image URL for feedback
+async function getCapyPoseUrl(type) {
+  const correctPoses = ['correct1','correct2','correct3','correct4','correct5','correct6','correct7'];
+  const wrongPoses = ['wrong1','wrong2','wrong3'];
+  const keys = type === 'correct' ? correctPoses : wrongPoses;
+  // Try random, fallback to others
+  const shuffled = shuffle([...keys]);
+  for(const key of shuffled) {
+    const blob = await getMedia(`capyPose_${key}`);
+    if(blob) return URL.createObjectURL(blob);
+  }
+  return null;
+}
+
+// Get specific pose image by key (hub, shop, report, etc.)
+async function getCapyPoseByKey(key) {
+  const blob = await getMedia(`capyPose_${key}`);
+  if(blob) return URL.createObjectURL(blob);
+  // Fallback to base image
+  const base = await getMedia('capyImage');
+  if(base) return URL.createObjectURL(base);
+  return null;
+}
+
+async function getCapyImageUrl() {
+  const blob = await getMedia('capyImage');
+  if(blob) return URL.createObjectURL(blob);
+  return null;
+}
+
+// ===== INIT =====
+loadState();
+if(state.capybaraName) { document.body.className=state.colorPalette; showScreen('hub-screen'); }
+else { document.body.className='palette-rose'; showScreen('welcome-screen'); }
+</script>
+</body>
+</html>

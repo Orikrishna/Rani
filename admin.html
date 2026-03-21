@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - Capybara Media</title>
+<style>
+* { margin:0;padding:0;box-sizing:border-box; }
+body { font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#1a1a2e;color:#eee;padding:20px;min-height:100vh; }
+h1 { text-align:center;margin-bottom:8px;color:#e94560; }
+h2 { margin:24px 0 12px;color:#0f3460;background:#e94560;display:inline-block;padding:6px 16px;border-radius:8px; }
+.status { text-align:center;color:#888;margin-bottom:20px; }
+.grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin:16px 0; }
+.item { background:#16213e;border-radius:12px;overflow:hidden;border:2px solid #0f3460; }
+.item img, .item video { width:100%;aspect-ratio:1;object-fit:cover;display:block; }
+.item video { aspect-ratio:9/16; }
+.item .label { padding:8px 12px;font-size:0.9em;text-align:center;color:#e94560;font-weight:bold; }
+.btn { display:inline-block;padding:10px 24px;border:none;border-radius:8px;font-size:1em;cursor:pointer;margin:8px;font-family:inherit; }
+.btn-danger { background:#e94560;color:white; }
+.btn-primary { background:#0f3460;color:white; }
+.actions { text-align:center;margin:20px 0; }
+.empty { color:#555;text-align:center;padding:40px;font-style:italic; }
+</style>
+</head>
+<body>
+<h1>🔧 Admin - Capybara Media Viewer</h1>
+<p class="status" id="status">Loading...</p>
+<div class="actions">
+  <button class="btn btn-primary" onclick="loadAll()">🔄 Refresh</button>
+  <button class="btn btn-danger" onclick="clearAll()">🗑️ Clear All Media</button>
+  <button class="btn btn-primary" onclick="regenerateVideos()">🎬 Regenerate Videos</button>
+</div>
+
+<h2>📷 Base Image</h2>
+<div class="grid" id="base-grid"></div>
+
+<h2>🎭 Pose Images (15)</h2>
+<div class="grid" id="poses-grid"></div>
+
+<h2>🎬 Videos (10)</h2>
+<div class="grid" id="videos-grid"></div>
+
+<script>
+const CAPY_DB = 'capyMediaDB';
+const CAPY_STORE = 'media';
+const GOOGLE_API_KEY = 'AIzaSyDMDvP1wPKjAJxaFalXNKlK8qC1tHLICXU';
+
+function openCapyDB() {
+  return new Promise((resolve,reject) => {
+    const req = indexedDB.open(CAPY_DB, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(CAPY_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function getMedia(key) {
+  const db = await openCapyDB();
+  return new Promise((resolve,reject) => {
+    const tx = db.transaction(CAPY_STORE,'readonly');
+    const req = tx.objectStore(CAPY_STORE).get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function saveMedia(key, blob) {
+  const db = await openCapyDB();
+  return new Promise((resolve,reject) => {
+    const tx = db.transaction(CAPY_STORE,'readwrite');
+    tx.objectStore(CAPY_STORE).put(blob, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function clearAllMedia() {
+  const db = await openCapyDB();
+  return new Promise((resolve,reject) => {
+    const tx = db.transaction(CAPY_STORE,'readwrite');
+    tx.objectStore(CAPY_STORE).clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+const POSE_KEYS = ['hub','correct1','correct2','correct3','correct4','correct5','correct6','correct7',
+  'wrong1','wrong2','wrong3','thinking','loading','shop','report'];
+const VIDEO_NAMES = ['dancing','breakdancing','jumping','confetti','crying','hugging','waving','spinning','sitting sad','star pose'];
+
+async function loadAll() {
+  const status = document.getElementById('status');
+
+  // Base image
+  const baseGrid = document.getElementById('base-grid');
+  baseGrid.innerHTML = '';
+  const baseBlob = await getMedia('capyImage');
+  if(baseBlob) {
+    const url = URL.createObjectURL(baseBlob);
+    baseGrid.innerHTML = `<div class="item"><img src="${url}"><div class="label">Base Image (${(baseBlob.size/1024).toFixed(0)} KB)</div></div>`;
+  } else {
+    baseGrid.innerHTML = '<div class="empty">No base image</div>';
+  }
+
+  // Poses
+  const posesGrid = document.getElementById('poses-grid');
+  posesGrid.innerHTML = '';
+  let poseCount = 0;
+  for(const key of POSE_KEYS) {
+    const blob = await getMedia(`capyPose_${key}`);
+    if(blob) {
+      poseCount++;
+      const url = URL.createObjectURL(blob);
+      posesGrid.innerHTML += `<div class="item"><img src="${url}"><div class="label">${key} (${(blob.size/1024).toFixed(0)} KB)</div></div>`;
+    }
+  }
+  if(!poseCount) posesGrid.innerHTML = '<div class="empty">No pose images</div>';
+
+  // Videos
+  const videosGrid = document.getElementById('videos-grid');
+  videosGrid.innerHTML = '';
+  let videoCount = 0;
+  for(let i = 0; i < 10; i++) {
+    const blob = await getMedia(`capyVideo_${i}`);
+    if(blob) {
+      videoCount++;
+      const url = URL.createObjectURL(blob);
+      videosGrid.innerHTML += `<div class="item"><video src="${url}" controls loop muted playsinline></video><div class="label">${VIDEO_NAMES[i]} (${(blob.size/1024/1024).toFixed(1)} MB)</div></div>`;
+    }
+  }
+  if(!videoCount) videosGrid.innerHTML = '<div class="empty">No videos yet</div>';
+
+  status.textContent = `Base: ${baseBlob?'✅':'❌'} | Poses: ${poseCount}/15 | Videos: ${videoCount}/10`;
+}
+
+async function clearAll() {
+  if(!confirm('Clear all media? This cannot be undone.')) return;
+  await clearAllMedia();
+  // Also clear state
+  const state = JSON.parse(localStorage.getItem('capyMathGame') || '{}');
+  state.hasAICapy = false;
+  delete state.capyStyle;
+  delete state.capyStylePrompt;
+  delete state.capyDesc;
+  localStorage.setItem('capyMathGame', JSON.stringify(state));
+  loadAll();
+}
+
+async function regenerateVideos() {
+  const baseBlob = await getMedia('capyImage');
+  if(!baseBlob) { alert('No base image found. Generate images first in the game.'); return; }
+
+  const reader = new FileReader();
+  const b64 = await new Promise(resolve => {
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.readAsDataURL(baseBlob);
+  });
+
+  const VIDEO_ACTIONS = [
+    {name:'dancing',prompt:'dancing happily, joyful dance moves'},
+    {name:'breakdancing',prompt:'breakdancing, spinning on the floor, hip hop moves'},
+    {name:'jumping',prompt:'jumping with joy, bouncing up and down excitedly'},
+    {name:'confetti',prompt:'throwing confetti in the air, celebrating'},
+    {name:'crying',prompt:'crying sadly, tears falling, looking down'},
+    {name:'hugging',prompt:'giving a warm hug, arms open wide'},
+    {name:'waving',prompt:'waving hello, friendly wave'},
+    {name:'spinning',prompt:'spinning around in circles, dizzy and happy'},
+    {name:'sitting sad',prompt:'sitting down sadly, looking disappointed'},
+    {name:'star pose',prompt:'doing a star pose, arms and legs spread, triumphant'}
+  ];
+
+  const status = document.getElementById('status');
+
+  for(let i = 0; i < VIDEO_ACTIONS.length; i++) {
+    const action = VIDEO_ACTIONS[i];
+    status.textContent = `🎬 Generating video ${i+1}/10: ${action.name}...`;
+
+    try {
+      const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/veo-2.0-generate-001:predictLongRunning', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','x-goog-api-key': GOOGLE_API_KEY},
+        body: JSON.stringify({
+          instances: [{
+            prompt: `A cute capybara ${action.prompt}, short video, looping, fun animation`,
+            image: {bytesBase64Encoded: b64, mimeType: 'image/png'}
+          }],
+          parameters: {aspectRatio:'9:16', durationSeconds: 5}
+        })
+      });
+      const opData = await resp.json();
+      if(!opData.name) {
+        status.textContent = `❌ Video ${i+1} failed: ${opData.error?.message || 'no operation'}`;
+        continue;
+      }
+
+      // Poll
+      for(let attempt = 0; attempt < 60; attempt++) {
+        await new Promise(r => setTimeout(r, 5000));
+        status.textContent = `🎬 Video ${i+1}/10: ${action.name} (polling ${attempt+1})...`;
+        const pollResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/${opData.name}`, {
+          headers: {'x-goog-api-key': GOOGLE_API_KEY}
+        });
+        const pollData = await pollResp.json();
+        if(pollData.done) {
+          const videoUri = pollData.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri || pollData.response?.generatedSamples?.[0]?.video?.uri;
+          if(videoUri) {
+            const videoResp = await fetch(`${videoUri}&key=${GOOGLE_API_KEY}`);
+            const videoBlob = await videoResp.blob();
+            await saveMedia(`capyVideo_${i}`, videoBlob);
+            status.textContent = `✅ Video ${i+1}/10: ${action.name} saved!`;
+          } else {
+            status.textContent = `❌ Video ${i+1}: no URI in response`;
+          }
+          break;
+        }
+      }
+    } catch(err) {
+      status.textContent = `❌ Video ${i+1} error: ${err.message}`;
+    }
+  }
+
+  status.textContent = '🎉 Done! Refreshing...';
+  setTimeout(loadAll, 1000);
+}
+
+loadAll();
+</script>
+</body>
+</html>
