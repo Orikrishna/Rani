@@ -173,17 +173,17 @@ async function regenerateVideos() {
   for(let i = 0; i < VIDEO_ACTIONS.length; i++) {
     const action = VIDEO_ACTIONS[i];
 
-    // Skip if already exists
+    // Skip if already exists AND has actual content
     const existing = await getMedia(`capyVideo_${i}`);
-    if(existing) {
+    if(existing && existing.size > 1000) {
       skipCount++;
-      status.textContent = `⏭️ Video ${i+1}/10: ${action.name} already exists, skipping...`;
+      status.textContent = `⏭️ Video ${i+1}/10: ${action.name} exists (${(existing.size/1024/1024).toFixed(1)} MB), skipping...`;
       continue;
     }
 
-    // Retry up to 3 times on rate limit
+    // Retry up to 5 times on rate limit with longer waits
     let generated = false;
-    for(let retry = 0; retry < 3 && !generated; retry++) {
+    for(let retry = 0; retry < 5 && !generated; retry++) {
       status.textContent = `🎬 Video ${i+1}/10: ${action.name}${retry ? ` (retry ${retry})` : ''}...`;
 
       try {
@@ -201,8 +201,8 @@ async function regenerateVideos() {
         const opData = await resp.json();
         if(!opData.name) {
           if(opData.error?.code === 429) {
-            status.textContent = `⏳ Video ${i+1}: rate limited, waiting 45s...`;
-            await new Promise(r => setTimeout(r, 45000));
+            status.textContent = `⏳ Video ${i+1}: rate limited, waiting 60s (retry ${retry+1}/5)...`;
+            await new Promise(r => setTimeout(r, 60000));
             continue;
           }
           status.textContent = `❌ Video ${i+1} failed: ${opData.error?.message || 'no operation'}`;
@@ -222,10 +222,14 @@ async function regenerateVideos() {
             if(videoUri) {
               const videoResp = await fetch(`${videoUri}&key=${GOOGLE_API_KEY}`);
               const videoBlob = await videoResp.blob();
-              await saveMedia(`capyVideo_${i}`, videoBlob);
-              status.textContent = `✅ Video ${i+1}/10: ${action.name} saved! (${(videoBlob.size/1024/1024).toFixed(1)} MB)`;
-              successCount++;
-              generated = true;
+              if(videoBlob.size > 1000) {
+                await saveMedia(`capyVideo_${i}`, videoBlob);
+                status.textContent = `✅ Video ${i+1}/10: ${action.name} saved! (${(videoBlob.size/1024/1024).toFixed(1)} MB)`;
+                successCount++;
+                generated = true;
+              } else {
+                status.textContent = `⚠️ Video ${i+1}: downloaded but empty, retrying...`;
+              }
             } else {
               status.textContent = `❌ Video ${i+1}: no URI in response`;
             }
