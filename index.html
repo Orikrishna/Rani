@@ -1817,20 +1817,18 @@ function resetCapyStyle() {
 async function getCapyFeedbackHTML(type) {
   if(!state.hasAICapy) return type==='correct' ? CAPYBARA_HTML : SAD_CAPYBARA_HTML;
 
-  // Try video first
+  // Always get pose image as reliable fallback
+  const imgUrl = await getCapyPoseUrl(type);
+  const imgFallback = imgUrl ? `<img class="video-feedback" src="${imgUrl}" alt="קפיברה">` : (type==='correct' ? CAPYBARA_HTML : SAD_CAPYBARA_HTML);
+
+  // Try video — show image first, swap to video when it plays
   const videoUrl = await getCapyVideoUrl(type);
   if(videoUrl) {
-    // Use poster from pose image so something shows while video loads
-    const posterUrl = await getCapyPoseUrl(type);
-    const poster = posterUrl ? ` poster="${posterUrl}"` : '';
-    return `<video class="video-feedback" src="${videoUrl}" autoplay loop muted playsinline${poster} onerror="this.outerHTML='<img class=video-feedback src=\\'${posterUrl || ''}\\' alt=קפיברה>'"></video>`;
+    const id = 'vfb_' + Math.random().toString(36).slice(2,8);
+    return `<div id="${id}">${imgFallback}<video class="video-feedback" style="display:none" src="${videoUrl}" autoplay loop muted playsinline onplay="this.style.display='block';this.previousElementSibling.style.display='none'" onerror="this.remove()"></video></div>`;
   }
 
-  // Try pose image
-  const imgUrl = await getCapyPoseUrl(type);
-  if(imgUrl) return `<img class="video-feedback" src="${imgUrl}" alt="קפיברה">`;
-
-  return type==='correct' ? CAPYBARA_HTML : SAD_CAPYBARA_HTML;
+  return imgFallback;
 }
 
 // Get a random video URL for feedback
