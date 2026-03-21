@@ -1831,10 +1831,11 @@ async function getCapyFeedbackHTML(type) {
 async function getCapyVideoUrl(type) {
   const correctVideos = [0,1,2,3,6,7,9]; // dancing, breakdance, jumping, confetti, waving, spinning, star
   const wrongVideos = [4,8]; // crying, sitting sad
-  const indices = type === 'correct' ? correctVideos : wrongVideos;
-  const idx = indices[Math.floor(Math.random()*indices.length)];
-  const blob = await getMedia(`capyVideo_${idx}`);
-  if(blob) return URL.createObjectURL(blob);
+  const indices = shuffle([...(type === 'correct' ? correctVideos : wrongVideos)]);
+  for(const idx of indices) {
+    const blob = await getMedia(`capyVideo_${idx}`);
+    if(blob) return URL.createObjectURL(blob);
+  }
   return null;
 }
 
