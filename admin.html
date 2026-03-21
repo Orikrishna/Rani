@@ -30,6 +30,7 @@ h2 { margin:24px 0 12px;color:#0f3460;background:#e94560;display:inline-block;pa
   <button class="btn btn-danger" onclick="clearAll()">🗑️ Clear All Media</button>
   <button class="btn btn-primary" onclick="regenerateVideos()">🎬 Regenerate Videos</button>
 </div>
+<div id="log" style="max-height:200px;overflow-y:auto;font-size:0.85em;color:#aaa;margin:10px 0;padding:8px;background:#111;border-radius:8px;display:none;white-space:pre-wrap;"></div>
 
 <h2>📷 Base Image</h2>
 <div class="grid" id="base-grid"></div>
@@ -143,7 +144,16 @@ async function clearAll() {
   loadAll();
 }
 
+function logMsg(msg) {
+  const el = document.getElementById('log');
+  el.style.display = 'block';
+  el.textContent += new Date().toLocaleTimeString() + ' ' + msg + '\n';
+  el.scrollTop = el.scrollHeight;
+}
+
 async function regenerateVideos() {
+  document.getElementById('log').textContent = '';
+  document.getElementById('log').style.display = 'block';
   const baseBlob = await getMedia('capyImage');
   if(!baseBlob) { alert('No base image found. Generate images first in the game.'); return; }
 
@@ -204,8 +214,10 @@ async function regenerateVideos() {
         });
         const opData = await resp.json();
         if(!opData.name) {
-          status.textContent = `⚠️ Video ${i+1}: ${opData.error?.message || 'failed'} — will retry...`;
-          continue;  // always retry, whether 429 or other error
+          const errMsg = `⚠️ Video ${i+1} (${action.name}): ${opData.error?.message || 'failed'}`;
+          status.textContent = errMsg + ' — will retry...';
+          logMsg(errMsg);
+          continue;
         }
 
         // Poll
@@ -223,10 +235,12 @@ async function regenerateVideos() {
               const videoBlob = await videoResp.blob();
               if(videoBlob.size > 1000) {
                 await saveMedia(`capyVideo_${i}`, videoBlob);
-                status.textContent = `✅ Video ${i+1}/10: ${action.name} saved! (${(videoBlob.size/1024/1024).toFixed(1)} MB)`;
+                const okMsg = `✅ Video ${i+1}/10: ${action.name} saved! (${(videoBlob.size/1024/1024).toFixed(1)} MB)`;
+                status.textContent = okMsg; logMsg(okMsg);
                 successCount++;
                 generated = true;
               } else {
+                logMsg(`⚠️ Video ${i+1}: downloaded but empty (${videoBlob.size} bytes)`);
                 status.textContent = `⚠️ Video ${i+1}: downloaded but empty, retrying...`;
               }
             } else {
