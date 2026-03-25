@@ -183,17 +183,22 @@ input:focus { border-color:var(--secondary); }
 
 /* ===== BUBBLES GAME ===== */
 .bubbles-arena { position:relative;width:100%;height:420px;background:linear-gradient(180deg,#E3F2FD,var(--bg));border-radius:var(--radius);overflow:hidden;margin:16px 0; }
-.bubble { position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1.3em;cursor:pointer;transition:transform 0.2s;user-select:none;box-shadow:inset -4px -4px 8px rgba(0,0,0,0.1),inset 4px 4px 8px rgba(255,255,255,0.5); }
-.bubble:hover { transform:scale(1.15)!important; }
-.bubble.popping { animation:pop 0.3s ease forwards; }
+.bubble { position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1.3em;cursor:pointer;user-select:none;box-shadow:inset -4px -4px 8px rgba(0,0,0,0.1),inset 4px 4px 8px rgba(255,255,255,0.5);will-change:left,top; }
+.bubble:hover { filter:brightness(1.1); }
+.bubble.popping { animation:pop 0.3s ease forwards;pointer-events:none; }
 .bubble.wrong-shake { animation:shake 0.4s ease; }
 @keyframes pop { 0%{transform:scale(1);opacity:1} 50%{transform:scale(1.5);opacity:0.5} 100%{transform:scale(0);opacity:0} }
 
 /* ===== SHOOTER GAME ===== */
-.shooter-arena { position:relative;width:100%;height:450px;background:linear-gradient(180deg,#E8EAF6,var(--bg));border-radius:var(--radius);overflow:hidden;margin:16px 0; }
-.falling-answer { position:absolute;width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1.2em;background:var(--card);box-shadow:0 4px 12px var(--shadow);transition:none; }
-.cannon { position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:2.5em;transition:left 0.1s;z-index:5;cursor:pointer; }
-.candy-bullet { position:absolute;width:20px;height:20px;font-size:20px;z-index:4;pointer-events:none; }
+.shooter-arena { position:relative;width:100%;height:450px;background:linear-gradient(180deg,#D1C4E9,#E8EAF6);border-radius:var(--radius);overflow:hidden;margin:16px 0;cursor:crosshair; }
+.shooter-candy { position:absolute;width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1.3em;box-shadow:0 4px 15px rgba(0,0,0,0.2);transition:transform 0.3s,opacity 0.3s;border:3px solid rgba(255,255,255,0.6); }
+.shooter-capybara { position:absolute;bottom:10px;left:50%;transform:translateX(-50%) scale(0.55);z-index:5;pointer-events:none; }
+.aim-line { position:absolute;bottom:85px;left:50%;width:4px;height:160px;background:linear-gradient(to top,#9C27B0,rgba(156,39,176,0.2));transform-origin:bottom center;transform:translateX(-50%) rotate(0deg);z-index:4;pointer-events:none;border-radius:2px; }
+.aim-dot { position:absolute;top:-8px;left:-6px;width:16px;height:16px;border-radius:50%;background:#E040FB;box-shadow:0 0 12px #E040FB; }
+.candy-bullet { position:absolute;width:24px;height:24px;font-size:22px;z-index:4;pointer-events:none;text-align:center;line-height:24px; }
+@keyframes candyExplode { 0%{transform:scale(1);opacity:1} 50%{transform:scale(1.6);opacity:0.7} 100%{transform:scale(2.2);opacity:0} }
+.candy-exploding { animation:candyExplode 0.5s ease-out forwards; }
+.explode-particle { position:absolute;width:10px;height:10px;border-radius:50%;pointer-events:none; }
 
 /* ===== FILL TABLE ===== */
 .fill-table { border-collapse:collapse;width:100%;margin:16px 0; }
@@ -238,11 +243,20 @@ input:focus { border-color:var(--secondary); }
 .race-input input { flex:1;font-size:1.5em;padding:16px; }
 
 /* ===== PUZZLE GAME ===== */
-.puzzle-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:16px 0;max-width:360px;margin-left:auto;margin-right:auto; }
-.puzzle-piece { aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:2em;transition:all 0.5s;position:relative;overflow:hidden; }
+.puzzle-layout { display:flex;gap:12px;align-items:flex-start;margin:12px 0; }
+.puzzle-layout .puzzle-grid { flex:1;min-width:0;margin:0; }
+.puzzle-controls { flex:0 0 180px;display:flex;flex-direction:column;gap:8px; }
+.puzzle-controls .answer-input-row { margin:0; }
+.puzzle-controls .answer-input-row input { width:100%;font-size:1.2em;padding:10px; }
+.puzzle-controls .numpad { margin:0; }
+.puzzle-controls .feedback-area { margin:0; }
+@media(max-width:500px) { .puzzle-layout{flex-direction:column;align-items:stretch;} .puzzle-controls{flex:none;} }
+.puzzle-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-width:360px;margin-left:auto;margin-right:auto;border-radius:var(--radius);overflow:hidden;position:relative;direction:ltr; }
+.puzzle-piece { aspect-ratio:var(--piece-ratio,1);display:flex;align-items:center;justify-content:center;font-size:2em;transition:all 0.5s;position:relative;overflow:hidden; }
 .puzzle-piece.hidden { background:var(--primary);cursor:default; }
 .puzzle-piece.hidden::after { content:'?';font-size:1.5em;color:rgba(255,255,255,0.5); }
-.puzzle-piece.revealed { animation:popIn 0.5s; }
+.puzzle-piece.revealed { background-size:300% 300%;animation:popIn 0.5s; }
+.puzzle-piece.no-image.revealed { background:var(--bg); }
 
 /* ===== REPORT CARD ===== */
 .mastery-grid-container { overflow-x:auto; }
@@ -276,12 +290,6 @@ input:focus { border-color:var(--secondary); }
 .stage-complete .score-text { font-size:1.2em;margin:10px 0; }
 
 /* ===== AI CAPYBARA SETUP ===== */
-.capy-desc-input { width:100%;padding:14px;border:2px solid var(--primary);border-radius:var(--radius);font-size:1em;font-family:inherit;outline:none;resize:none;height:80px; }
-.image-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:16px 0; }
-.image-option { border-radius:var(--radius);overflow:hidden;cursor:pointer;border:3px solid #e0d0e8;transition:all 0.3s;aspect-ratio:1;background:var(--card);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.1); }
-.image-option:hover { transform:scale(1.03); }
-.image-option.selected { border-color:var(--secondary);box-shadow:0 0 20px rgba(221,160,221,0.5); }
-.image-option img { width:100%;height:100%;object-fit:cover; }
 .loading-container { text-align:center;padding:40px 20px; }
 .loading-spinner { display:inline-block;width:60px;height:60px;border:5px solid var(--primary);border-top-color:var(--secondary);border-radius:50%;animation:spin 1s linear infinite; }
 @keyframes spin { to{transform:rotate(360deg)} }
@@ -289,10 +297,7 @@ input:focus { border-color:var(--secondary); }
 .loading-progress { width:100%;height:8px;background:var(--card);border-radius:4px;margin:16px 0;overflow:hidden; }
 .loading-progress-fill { height:100%;background:linear-gradient(90deg,var(--primary),var(--secondary));transition:width 0.5s;border-radius:4px; }
 .video-feedback { max-width:180px;border-radius:var(--radius);object-fit:contain;margin:10px auto;display:block; }
-video.video-feedback { max-height:280px; }
 .capy-hub-img { width:160px;height:160px;border-radius:50%;object-fit:cover;border:4px solid var(--primary);box-shadow:0 4px 15px var(--shadow); }
-.reset-capy-btn { position:absolute;top:10px;left:10px;background:var(--card);border:2px solid var(--primary);border-radius:50%;width:36px;height:36px;font-size:1.2em;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s;z-index:5; }
-.reset-capy-btn:hover { background:var(--primary); }
 .style-label { font-size:0.75em;text-align:center;margin-top:4px;color:var(--text-light); }
 
 @media(max-width:480px) {
@@ -326,53 +331,10 @@ video.video-feedback { max-height:280px; }
   </div>
 </div>
 
-<!-- ===== CAPYBARA AI SETUP ===== -->
-<div id="capy-desc-screen" class="screen">
-  <h1>🎨 עיצוב הקפיברה שלך</h1>
-  <p style="text-align:center;color:var(--text-light);margin-bottom:16px;">תארי את הקפיברה שלך ונייצר תמונות בסגנונות שונים!</p>
-  <div class="card">
-    <label style="font-weight:bold;display:block;margin-bottom:8px;">איך הקפיברה שלך נראית?</label>
-    <textarea id="capy-desc-input" class="capy-desc-input" placeholder="למשל: קפיברה חמודה עם כובע ורוד ועיניים גדולות..." dir="rtl"></textarea>
-  </div>
-  <div style="text-align:center;margin-top:16px;">
-    <button class="btn btn-primary" onclick="generateCapyImages()" style="font-size:1.2em;padding:16px 40px;">🖌️ ציירי לי!</button>
-  </div>
-  <div style="text-align:center;margin-top:12px;">
-    <button class="btn btn-back" onclick="skipCapyAI()" style="font-size:0.9em;">דלגי →</button>
-  </div>
-  <div id="capy-gen-status" style="display:none;text-align:center;margin-top:20px;">
-    <div class="loading-spinner"></div>
-    <p style="margin-top:12px;font-weight:bold;" id="capy-gen-text">מציירת קפיברות...</p>
-  </div>
-</div>
-
-<div id="capy-select-screen" class="screen">
-  <h1>🐹 בחרי את הקפיברה שלך!</h1>
-  <p style="text-align:center;color:var(--text-light);margin-bottom:12px;">לחצי על התמונה שהכי מוצאת חן בעינייך</p>
-  <div class="image-grid" id="capy-image-grid"></div>
-  <div style="text-align:center;margin-top:16px;">
-    <button class="btn btn-primary" id="capy-select-btn" onclick="confirmCapyImage()" style="font-size:1.2em;padding:16px 40px;display:none;">✨ זו הקפיברה שלי!</button>
-  </div>
-</div>
-
-<div id="capy-videos-screen" class="screen">
-  <h1>🎨 מכינה את הקפיברה שלך!</h1>
-  <div class="card" style="text-align:center;">
-    <div class="loading-spinner"></div>
-    <p style="margin-top:16px;font-weight:bold;" id="video-gen-text">מציירת תמונות וסרטונים...</p>
-    <div id="video-progress" style="margin-top:12px;">
-      <div style="background:#eee;border-radius:10px;height:20px;overflow:hidden;margin:12px 0;">
-        <div id="video-progress-bar" style="background:linear-gradient(90deg,var(--primary),var(--secondary));height:100%;width:0%;transition:width 0.5s;border-radius:10px;"></div>
-      </div>
-      <span id="video-progress-text">0 / 25</span>
-    </div>
-  </div>
-</div>
 
 <!-- ===== HUB ===== -->
 <div id="hub-screen" class="screen">
   <div class="capybara-container" style="position:relative;">
-    <button class="reset-capy-btn" onclick="resetCapyStyle()" title="שנה סגנון קפיברה" id="reset-capy-btn" style="display:none;">🎨</button>
     <div class="capybara idle" id="hub-capybara">
       <div class="capy-accessory accessory-crown" id="acc-crown">⭐</div>
       <div class="capy-accessory accessory-hat" id="acc-hat">🎩</div>
@@ -432,27 +394,8 @@ video.video-feedback { max-height:280px; }
   <div class="progress-bar"><div class="progress-fill" id="quiz-progress" style="width:0%"></div></div>
   <div class="streak-display" id="streak-display"></div>
   <div class="question-display" id="question-display"></div>
-  <div class="answer-input-row">
-    <input type="number" id="answer-input" placeholder="הקלידי תשובה..." inputmode="numeric">
-    <button class="btn btn-primary" onclick="submitTypedAnswer()">שלחי</button>
-  </div>
-  <div style="text-align:center;margin:8px 0;color:var(--text-light);">או בחרי:</div>
   <div class="choices-grid" id="choices-grid"></div>
   <div class="feedback-area" id="feedback-area"></div>
-  <div class="numpad">
-    <button class="numpad-btn" onclick="numpadTo('answer-input',1)">1</button>
-    <button class="numpad-btn" onclick="numpadTo('answer-input',2)">2</button>
-    <button class="numpad-btn" onclick="numpadTo('answer-input',3)">3</button>
-    <button class="numpad-btn" onclick="numpadTo('answer-input',4)">4</button>
-    <button class="numpad-btn" onclick="numpadTo('answer-input',5)">5</button>
-    <button class="numpad-btn" onclick="numpadTo('answer-input',6)">6</button>
-    <button class="numpad-btn" onclick="numpadTo('answer-input',7)">7</button>
-    <button class="numpad-btn" onclick="numpadTo('answer-input',8)">8</button>
-    <button class="numpad-btn" onclick="numpadTo('answer-input',9)">9</button>
-    <button class="numpad-btn numpad-del" onclick="numpadDel('answer-input')">⌫</button>
-    <button class="numpad-btn" onclick="numpadTo('answer-input',0)">0</button>
-    <button class="numpad-btn numpad-ok" onclick="submitTypedAnswer()">✓</button>
-  </div>
 </div>
 
 <!-- ===== MATCHING ===== -->
@@ -473,8 +416,12 @@ video.video-feedback { max-height:280px; }
 <div id="bubbles-screen" class="screen">
   <div class="quiz-header"><button class="btn btn-back" onclick="exitGame()">→ חזרה</button><span>🫧 בועות פיצוץ</span></div>
   <div class="question-display" id="bubble-question"></div>
-  <div class="progress-bar"><div class="progress-fill" id="bubble-progress" style="width:0%"></div></div>
   <div class="bubbles-arena" id="bubbles-arena"></div>
+  <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin:8px 0;font-size:0.9em;color:var(--text-light);">
+    <span>🐢</span>
+    <input type="range" id="bubble-speed" min="0.3" max="3" step="0.1" value="1" style="width:140px;accent-color:#DDA0DD;" oninput="setBubbleSpeed(this.value)">
+    <span>🐇</span>
+  </div>
   <div class="feedback-area" id="bubble-feedback"></div>
 </div>
 
@@ -484,7 +431,8 @@ video.video-feedback { max-height:280px; }
   <div class="question-display" id="shooter-question"></div>
   <div class="progress-bar"><div class="progress-fill" id="shooter-progress" style="width:0%"></div></div>
   <div class="shooter-arena" id="shooter-arena">
-    <div class="cannon" id="cannon">🍬</div>
+    <div class="aim-line" id="aim-line"><div class="aim-dot"></div></div>
+    <div class="shooter-capybara"><div class="capybara idle"><div class="capy-head"><div class="capy-ear left"></div><div class="capy-ear right"></div><div class="capy-eye left"><div class="capy-eye-shine"></div></div><div class="capy-eye right"><div class="capy-eye-shine"></div></div><div class="capy-snout"><div class="capy-nose"></div></div><div class="capy-smile"></div></div><div class="capy-body"></div><div class="capy-legs"><div class="capy-leg"></div><div class="capy-leg"></div><div class="capy-leg"></div><div class="capy-leg"></div></div></div></div>
   </div>
   <div class="feedback-area" id="shooter-feedback"></div>
 </div>
@@ -557,25 +505,29 @@ video.video-feedback { max-height:280px; }
   <div class="quiz-header"><button class="btn btn-back" onclick="exitGame()">→ חזרה</button><span>🧩 חידת תמונה</span></div>
   <div class="progress-bar"><div class="progress-fill" id="puzzle-progress" style="width:0%"></div></div>
   <div class="question-display" id="puzzle-question"></div>
-  <div class="answer-input-row">
-    <input type="number" id="puzzle-input" placeholder="תשובה..." inputmode="numeric">
-    <button class="btn btn-primary" onclick="submitPuzzleAnswer()">שלחי</button>
-  </div>
-  <div class="puzzle-grid" id="puzzle-grid"></div>
-  <div class="feedback-area" id="puzzle-feedback"></div>
-  <div class="numpad">
-    <button class="numpad-btn" onclick="numpadTo('puzzle-input',1)">1</button>
-    <button class="numpad-btn" onclick="numpadTo('puzzle-input',2)">2</button>
-    <button class="numpad-btn" onclick="numpadTo('puzzle-input',3)">3</button>
-    <button class="numpad-btn" onclick="numpadTo('puzzle-input',4)">4</button>
-    <button class="numpad-btn" onclick="numpadTo('puzzle-input',5)">5</button>
-    <button class="numpad-btn" onclick="numpadTo('puzzle-input',6)">6</button>
-    <button class="numpad-btn" onclick="numpadTo('puzzle-input',7)">7</button>
-    <button class="numpad-btn" onclick="numpadTo('puzzle-input',8)">8</button>
-    <button class="numpad-btn" onclick="numpadTo('puzzle-input',9)">9</button>
-    <button class="numpad-btn numpad-del" onclick="numpadDel('puzzle-input')">⌫</button>
-    <button class="numpad-btn" onclick="numpadTo('puzzle-input',0)">0</button>
-    <button class="numpad-btn numpad-ok" onclick="submitPuzzleAnswer()">✓</button>
+  <div class="puzzle-layout">
+    <div class="puzzle-grid" id="puzzle-grid"></div>
+    <div class="puzzle-controls">
+      <div class="answer-input-row">
+        <input type="number" id="puzzle-input" placeholder="תשובה..." inputmode="numeric">
+        <button class="btn btn-primary" onclick="submitPuzzleAnswer()">שלחי</button>
+      </div>
+      <div class="numpad">
+        <button class="numpad-btn" onclick="numpadTo('puzzle-input',1)">1</button>
+        <button class="numpad-btn" onclick="numpadTo('puzzle-input',2)">2</button>
+        <button class="numpad-btn" onclick="numpadTo('puzzle-input',3)">3</button>
+        <button class="numpad-btn" onclick="numpadTo('puzzle-input',4)">4</button>
+        <button class="numpad-btn" onclick="numpadTo('puzzle-input',5)">5</button>
+        <button class="numpad-btn" onclick="numpadTo('puzzle-input',6)">6</button>
+        <button class="numpad-btn" onclick="numpadTo('puzzle-input',7)">7</button>
+        <button class="numpad-btn" onclick="numpadTo('puzzle-input',8)">8</button>
+        <button class="numpad-btn" onclick="numpadTo('puzzle-input',9)">9</button>
+        <button class="numpad-btn numpad-del" onclick="numpadDel('puzzle-input')">⌫</button>
+        <button class="numpad-btn" onclick="numpadTo('puzzle-input',0)">0</button>
+        <button class="numpad-btn numpad-ok" onclick="submitPuzzleAnswer()">✓</button>
+      </div>
+      <div class="feedback-area" id="puzzle-feedback"></div>
+    </div>
   </div>
 </div>
 
@@ -678,7 +630,7 @@ const CAPY_FACTS = [
   'בברזיל, קפיברות נחשבות לחיה הכי חברותית בטבע.',
   'האוזניים של קפיברות הן עגולות וקטנות ונמצאות גבוה על הראש.'
 ];
-let factIndex = 0;
+let factIndex = Math.floor(Math.random() * CAPY_FACTS.length);
 
 const COLORS = ['color-1','color-2','color-3','color-4','color-5','color-6','color-7','color-8'];
 const CAPYBARA_HTML = `<div class="capybara-container"><div class="capybara dancing"><div class="capy-head"><div class="capy-ear left"></div><div class="capy-ear right"></div><div class="capy-eye left"><div class="capy-eye-shine"></div></div><div class="capy-eye right"><div class="capy-eye-shine"></div></div><div class="capy-snout"><div class="capy-nose"></div></div><div class="capy-smile"></div></div><div class="capy-body"></div><div class="capy-legs"><div class="capy-leg"></div><div class="capy-leg"></div><div class="capy-leg"></div><div class="capy-leg"></div></div></div></div>`;
@@ -732,7 +684,7 @@ function shuffle(arr) { for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.
 
 function generatePairs(tables, count) {
   const pairs = []; const used = new Set();
-  const multipliers = [2,3,4,5,6,7,8,9,10];
+  const multipliers = getMultipliers();
   while (pairs.length < count) {
     const a = tables[Math.floor(Math.random()*tables.length)];
     const b = multipliers[Math.floor(Math.random()*multipliers.length)];
@@ -754,6 +706,7 @@ function exitGame() {
   // Clean up any running game intervals
   if(window._gameInterval) { clearInterval(window._gameInterval); window._gameInterval=null; }
   if(window._gameRAF) { cancelAnimationFrame(window._gameRAF); window._gameRAF=null; }
+  if(bubbleState.rafId) { cancelAnimationFrame(bubbleState.rafId); bubbleState.active=false; bubbleState.rafId=null; }
   showScreen('hub-screen');
 }
 
@@ -770,12 +723,8 @@ function startGame() {
   if(!name){document.getElementById('capy-name-input').style.borderColor='#E57373';return;}
   state.capybaraName=name; state.colorPalette=selectedPalette; saveState();
   document.body.className=selectedPalette;
-  showScreen('capy-desc-screen');
-}
-function skipCapyAI() {
   showScreen('hub-screen');
 }
-
 // ===== HUB =====
 function renderHub() {
   document.body.className = state.colorPalette;
@@ -785,8 +734,6 @@ function renderHub() {
     const el = document.getElementById(item.accessoryId);
     if(el) el.style.display = state.ownedItems.includes(item.id)?'block':'none';
   });
-  // Always show reset/design button
-  document.getElementById('reset-capy-btn').style.display = 'flex';
   // Show AI capybara image if available, otherwise CSS capybara
   if(state.hasAICapy) {
     document.getElementById('hub-capybara').style.display = 'none';
@@ -855,15 +802,20 @@ function selectGame(type) {
       const card = document.createElement('div');
       card.className = 'stage-card';
       card.innerHTML = `<div class="stage-icon">${stage.icon}</div><div class="stage-info"><h3>${stage.name}</h3><p>${stage.desc}</p></div>`;
-      card.onclick = () => startSelectedGame(stage.tables);
+      card.onclick = () => startSelectedGame(stage.tables, stage.id);
       container.appendChild(card);
     });
     showScreen('stage-screen');
   }
 }
 
-function startSelectedGame(tables) {
+let currentDifficulty = 'easy';
+function getMultipliers() {
+  return currentDifficulty === 'easy' ? [2,3,4,5,6,7,8,9,10] : [3,4,5,6,7,8,9];
+}
+function startSelectedGame(tables, diffId) {
   currentTables = tables;
+  currentDifficulty = diffId || 'easy';
   switch(currentGameType) {
     case 'quiz': startQuiz(tables); break;
     case 'matching': startMatching(tables); break;
@@ -890,7 +842,6 @@ function showQuizQuestion() {
   document.getElementById('quiz-progress').style.width=(currentQuiz.currentQ/currentQuiz.questions.length*100)+'%';
   updateStreakDisplay();
   document.getElementById('question-display').innerHTML=colorQuestion(q.a,q.b);
-  const input=document.getElementById('answer-input');input.value='';input.disabled=false;input.focus();
   const grid=document.getElementById('choices-grid');grid.innerHTML='';
   generateChoices(q.answer).forEach(c=>{
     const btn=document.createElement('button');btn.className='choice-btn';btn.textContent=c;
@@ -906,15 +857,11 @@ function updateStreakDisplay() {
   else{d.textContent='';d.className='streak-display';}
 }
 
-function submitTypedAnswer(){const v=parseInt(document.getElementById('answer-input').value);if(!isNaN(v))checkQuizAnswer(v,null);}
-
 function checkQuizAnswer(answer, btnEl) {
   const q=currentQuiz.questions[currentQuiz.currentQ]; currentQuiz.attempts++;
   if(answer===q.answer){
     if(btnEl)btnEl.classList.add('correct');
-    else document.querySelectorAll('.choice-btn').forEach(b=>{if(parseInt(b.textContent)===q.answer)b.classList.add('correct');});
     document.querySelectorAll('.choice-btn').forEach(b=>b.disabled=true);
-    document.getElementById('answer-input').disabled=true;
     let pts=currentQuiz.attempts===1?10:currentQuiz.attempts===2?5:2;
     const mult=currentQuiz.streak>=5?3:currentQuiz.streak>=3?2:1; pts*=mult;
     currentQuiz.streak++; if(currentQuiz.attempts===1)currentQuiz.correctFirst++;
@@ -933,7 +880,7 @@ function checkQuizAnswer(answer, btnEl) {
   } else {
     if(btnEl){btnEl.classList.add('wrong');btnEl.disabled=true;}
     currentQuiz.streak=0; updateMastery(q.a,q.b,false);
-    document.getElementById('answer-input').value=''; updateStreakDisplay();
+    updateStreakDisplay();
     getCapyFeedbackHTML('wrong').then(capyHTML => {
       document.getElementById('feedback-area').innerHTML=`${capyHTML}<div class="feedback-text wrong-text">לא נכון... נסי שוב! 💪</div>`;
     });
@@ -1038,91 +985,258 @@ function checkMatching() {
 
 // ===== 3. BUBBLES =====
 let bubbleState = {};
+const BUBBLE_COLORS = ['#FFB6C1','#DDA0DD','#87CEEB','#98D8A0','#FFCBA4','#C9B1FF'];
+const BUBBLE_SIZE = 65;
+const BUBBLE_R = BUBBLE_SIZE / 2;
+
+let bubbleSpeedMul = 1;
+function setBubbleSpeed(v) { bubbleSpeedMul = parseFloat(v); }
+
 function startBubbles(tables) {
-  bubbleState = {pairs:generatePairs(tables,8),currentQ:0,correctCount:0,totalPoints:0};
+  if(bubbleState.rafId) cancelAnimationFrame(bubbleState.rafId);
+  bubbleSpeedMul = 1;
+  const slider = document.getElementById('bubble-speed');
+  if(slider) slider.value = '1';
+  bubbleState = {tables,bubbleCount:6,correctCount:0,totalPoints:0,totalQ:0,popping:false,bodies:[],rafId:null,active:true};
   showScreen('bubbles-screen');
-  showBubbleQuestion();
+  showBubbleRound();
 }
 
-function showBubbleQuestion() {
-  if(bubbleState.currentQ >= bubbleState.pairs.length) {
-    finishGame(bubbleState.correctCount,bubbleState.pairs.length,bubbleState.totalPoints); return;
+function generateBubbleQuestion(tables) {
+  const multipliers = getMultipliers();
+  const a = tables[Math.floor(Math.random()*tables.length)];
+  const b = multipliers[Math.floor(Math.random()*multipliers.length)];
+  return {a, b, answer: a*b};
+}
+
+function createBubbleBody(arena) {
+  const aw = arena.clientWidth, ah = arena.clientHeight;
+  const speed = 40 + Math.random() * 40;
+  const angle = Math.random() * Math.PI * 2;
+  return {
+    x: BUBBLE_R + Math.random() * (aw - BUBBLE_SIZE),
+    y: BUBBLE_R + Math.random() * (ah - BUBBLE_SIZE),
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+    r: BUBBLE_R
+  };
+}
+
+function bubblePhysicsLoop(ts) {
+  if(!bubbleState.active) return;
+  if(!bubbleState.lastTs) { bubbleState.lastTs = ts; bubbleState.rafId = requestAnimationFrame(bubblePhysicsLoop); return; }
+  const dt = Math.min((ts - bubbleState.lastTs) / 1000, 0.05);
+  bubbleState.lastTs = ts;
+  const arena = document.getElementById('bubbles-arena');
+  if(!arena) return;
+  const aw = arena.clientWidth, ah = arena.clientHeight;
+  const bodies = bubbleState.bodies;
+
+  // Move
+  const spd = bubbleSpeedMul;
+  for(const b of bodies) {
+    b.x += b.vx * dt * spd;
+    b.y += b.vy * dt * spd;
   }
-  const q = bubbleState.pairs[bubbleState.currentQ];
+
+  // Wall bounce
+  for(const b of bodies) {
+    if(b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx); }
+    if(b.x + b.r > aw) { b.x = aw - b.r; b.vx = -Math.abs(b.vx); }
+    if(b.y - b.r < 0) { b.y = b.r; b.vy = Math.abs(b.vy); }
+    if(b.y + b.r > ah) { b.y = ah - b.r; b.vy = -Math.abs(b.vy); }
+  }
+
+  // Bubble-to-bubble collisions (elastic)
+  for(let i = 0; i < bodies.length; i++) {
+    for(let j = i+1; j < bodies.length; j++) {
+      const a = bodies[i], b2 = bodies[j];
+      const dx = b2.x - a.x, dy = b2.y - a.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const minDist = a.r + b2.r;
+      if(dist < minDist && dist > 0) {
+        // Separate
+        const nx = dx/dist, ny = dy/dist;
+        const overlap = minDist - dist;
+        a.x -= nx * overlap/2; a.y -= ny * overlap/2;
+        b2.x += nx * overlap/2; b2.y += ny * overlap/2;
+        // Elastic collision (equal mass)
+        const dvx = a.vx - b2.vx, dvy = a.vy - b2.vy;
+        const dot = dvx*nx + dvy*ny;
+        if(dot > 0) {
+          a.vx -= dot*nx; a.vy -= dot*ny;
+          b2.vx += dot*nx; b2.vy += dot*ny;
+        }
+      }
+    }
+  }
+
+  // Update DOM positions
+  for(const b of bodies) {
+    if(b.el) {
+      b.el.style.left = (b.x - b.r) + 'px';
+      b.el.style.top = (b.y - b.r) + 'px';
+    }
+  }
+
+  bubbleState.rafId = requestAnimationFrame(bubblePhysicsLoop);
+}
+
+function showBubbleRound() {
+  if(bubbleState.bubbleCount <= 0) {
+    bubbleState.active = false;
+    if(bubbleState.rafId) cancelAnimationFrame(bubbleState.rafId);
+    finishGame(bubbleState.correctCount,bubbleState.totalQ,bubbleState.totalPoints); return;
+  }
+  bubbleState.popping = false;
+  const q = generateBubbleQuestion(bubbleState.tables);
+  bubbleState.currentQ = q;
   document.getElementById('bubble-question').innerHTML = colorQuestion(q.a, q.b);
-  document.getElementById('bubble-progress').style.width=(bubbleState.currentQ/bubbleState.pairs.length*100)+'%';
-  document.getElementById('bubble-feedback').innerHTML='';
+  document.getElementById('bubble-feedback').innerHTML=`<div style="text-align:center;color:var(--text-light);font-size:0.95em;">🫧 נשארו ${bubbleState.bubbleCount} בועות</div>`;
+
   const arena = document.getElementById('bubbles-arena');
   arena.innerHTML = '';
+  if(bubbleState.rafId) cancelAnimationFrame(bubbleState.rafId);
+  bubbleState.bodies = [];
+  bubbleState.lastTs = null;
+
+  const count = bubbleState.bubbleCount;
   const answers = new Set([q.answer]);
-  while(answers.size < 6) { const w=q.answer+Math.floor(Math.random()*20)-10; if(w>0) answers.add(w); }
-  const bubbleColors = ['#FFB6C1','#DDA0DD','#87CEEB','#98D8A0','#FFCBA4','#C9B1FF'];
-  // Place bubbles in a grid to avoid overlap
-  const positions = [];
-  const cols = 3, rows = 2;
-  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) positions.push({x:5+c*32+Math.random()*10, y:5+r*42+Math.random()*10});
-  shuffle(positions);
+  while(answers.size<count){const w=q.answer+Math.floor(Math.random()*20)-10;if(w>0)answers.add(w);}
+  while(answers.size<count) answers.add(q.answer+answers.size+1);
+
   shuffle([...answers]).forEach((val,i) => {
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
-    const size = 60+Math.random()*20;
-    const pos = positions[i];
-    bubble.style.cssText = `width:${size}px;height:${size}px;background:${bubbleColors[i%6]};
-      left:${pos.x}%;top:${pos.y}%;color:var(--text);`;
+    const body = createBubbleBody(arena);
+    bubble.style.cssText = `width:${BUBBLE_SIZE}px;height:${BUBBLE_SIZE}px;background:${BUBBLE_COLORS[i%6]};left:${body.x-BUBBLE_R}px;top:${body.y-BUBBLE_R}px;color:var(--text);`;
     bubble.textContent = val;
-    bubble.onclick = () => popBubble(bubble, val, q);
-    const dur = 4+Math.random()*3;
-    bubble.style.animation = `float${i%6} ${dur}s ease-in-out infinite ${Math.random()*2}s`;
+    bubble.onclick = () => popBubble(bubble, val);
     arena.appendChild(bubble);
+    body.el = bubble;
+    bubbleState.bodies.push(body);
   });
+
+  bubbleState.active = true;
+  bubbleState.rafId = requestAnimationFrame(bubblePhysicsLoop);
 }
 
-function popBubble(el, val, q) {
-  if(el.classList.contains('popping')) return;
+function popBubble(el, val) {
+  if(bubbleState.popping || el.classList.contains('popping')) return;
+  const q = bubbleState.currentQ;
+  bubbleState.totalQ++;
+
   if(val === q.answer) {
+    bubbleState.popping = true;
     el.classList.add('popping');
-    showConfetti();
-    bubbleState.correctCount++; const pts=10; bubbleState.totalPoints+=pts; addPoints(pts);
+    const rect = el.getBoundingClientRect();
+    const cx = (rect.left + rect.width/2) / window.innerWidth;
+    const cy = (rect.top + rect.height/2) / window.innerHeight;
+    confetti({particleCount:60,spread:50,origin:{x:cx,y:cy},colors:['#FFB6C1','#DDA0DD','#87CEEB','#98D8A0','#FFD700']});
+    bubbleState.correctCount++;
+    const pts=10; bubbleState.totalPoints+=pts; addPoints(pts);
     updateMastery(q.a,q.b,true);
-    const fact = getCapyFact();
-    document.getElementById('bubble-feedback').innerHTML=`
-      <div class="feedback-text correct-text">נכון! 🎉 +${pts}</div>
-      <div class="capybara-fact">🐹 ${fact}</div>
-      <button class="btn btn-next" onclick="bubbleState.currentQ++;showBubbleQuestion()">הבא ←</button>`;
+    bubbleState.bubbleCount--;
+    // Remove from physics
+    bubbleState.bodies = bubbleState.bodies.filter(b => b.el !== el);
+
+    setTimeout(()=>{
+      el.remove();
+      if(bubbleState.bubbleCount <= 0) {
+        bubbleState.active = false;
+        if(bubbleState.rafId) cancelAnimationFrame(bubbleState.rafId);
+        document.getElementById('bubble-feedback').innerHTML=`
+          <div class="feedback-text correct-text">כל הבועות התפוצצו! 🎉</div>`;
+        setTimeout(()=>finishGame(bubbleState.correctCount,bubbleState.totalQ,bubbleState.totalPoints),1200);
+      } else {
+        const newQ = generateBubbleQuestion(bubbleState.tables);
+        bubbleState.currentQ = newQ;
+        document.getElementById('bubble-question').innerHTML = colorQuestion(newQ.a, newQ.b);
+        document.getElementById('bubble-feedback').innerHTML=`<div style="text-align:center;color:var(--text-light);font-size:0.95em;">🫧 נשארו ${bubbleState.bubbleCount} בועות</div>`;
+        updateBubbleNumbers(newQ);
+        bubbleState.popping = false;
+      }
+    }, 350);
   } else {
     el.classList.add('wrong-shake');
     updateMastery(q.a,q.b,false);
-    const penalty = 3;
-    bubbleState.totalPoints = Math.max(0, bubbleState.totalPoints - penalty);
+    const penalty=3;
+    bubbleState.totalPoints=Math.max(0,bubbleState.totalPoints-penalty);
     addPoints(-penalty);
-    el.style.opacity = '0.4';
-    el.style.pointerEvents = 'none';
     document.getElementById('bubble-feedback').innerHTML=`<div class="feedback-text wrong-text">לא נכון! -${penalty} נקודות 😢</div>`;
     setTimeout(()=>{el.classList.remove('wrong-shake');},400);
+
+    // Add a new bubble
+    bubbleState.bubbleCount++;
+    const arena = document.getElementById('bubbles-arena');
+    const newBubble = document.createElement('div');
+    newBubble.className = 'bubble';
+    const body = createBubbleBody(arena);
+    newBubble.style.cssText = `width:${BUBBLE_SIZE}px;height:${BUBBLE_SIZE}px;background:${BUBBLE_COLORS[Math.floor(Math.random()*6)]};left:${body.x-BUBBLE_R}px;top:${body.y-BUBBLE_R}px;color:var(--text);opacity:0;`;
+    newBubble.textContent = '?';
+    newBubble.style.animation = 'popIn 0.4s ease forwards';
+    arena.appendChild(newBubble);
+    body.el = newBubble;
+    bubbleState.bodies.push(body);
+
+    setTimeout(()=>{
+      const newQ = generateBubbleQuestion(bubbleState.tables);
+      bubbleState.currentQ = newQ;
+      bubbleState.totalQ++;
+      document.getElementById('bubble-question').innerHTML = colorQuestion(newQ.a, newQ.b);
+      document.getElementById('bubble-feedback').innerHTML=`<div style="text-align:center;color:var(--text-light);font-size:0.95em;">🫧 נשארו ${bubbleState.bubbleCount} בועות</div>`;
+      updateBubbleNumbers(newQ);
+    }, 600);
   }
+}
+
+function updateBubbleNumbers(q) {
+  const arena = document.getElementById('bubbles-arena');
+  const bubbles = arena.querySelectorAll('.bubble:not(.popping)');
+  const count = bubbles.length;
+  if(count===0) return;
+  const answers = new Set([q.answer]);
+  while(answers.size<count){const w=q.answer+Math.floor(Math.random()*20)-10;if(w>0)answers.add(w);}
+  while(answers.size<count) answers.add(q.answer+answers.size+1);
+  const vals = shuffle([...answers]);
+  bubbles.forEach((b,i) => {
+    b.textContent = vals[i];
+    b.onclick = () => popBubble(b, vals[i]);
+    b.style.opacity='1';
+    b.style.pointerEvents='auto';
+  });
 }
 
 // ===== 4. SHOOTER =====
 let shooterState = {};
+
 function startShooter(tables) {
-  shooterState = {pairs:generatePairs(tables,6),currentQ:0,correctCount:0,totalPoints:0,fallingAnswers:[],cannonX:50,active:true};
+  shooterState = {pairs:generatePairs(tables,6),currentQ:0,correctCount:0,totalPoints:0,aimAngle:0,active:true,shooting:false};
   showScreen('shooter-screen');
   showShooterQuestion();
-  // Cannon movement
   const arena = document.getElementById('shooter-arena');
-  arena.onmousemove = (e) => {
-    const rect=arena.getBoundingClientRect();
-    shooterState.cannonX = ((e.clientX-rect.left)/rect.width)*100;
-    document.getElementById('cannon').style.left = shooterState.cannonX+'%';
+  const aimLine = document.getElementById('aim-line');
+
+  function updateAim(clientX, clientY) {
+    const rect = arena.getBoundingClientRect();
+    const centerX = rect.left + rect.width/2;
+    const baseY = rect.bottom - 85;
+    const dx = clientX - centerX;
+    const dy = baseY - clientY;
+    let angle = Math.atan2(dx, dy) * (180/Math.PI);
+    angle = Math.max(-70, Math.min(70, angle));
+    shooterState.aimAngle = angle;
+    aimLine.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+  }
+
+  arena.onmousemove = (e) => updateAim(e.clientX, e.clientY);
+  arena.ontouchmove = (e) => { updateAim(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); };
+  arena.onclick = (e) => {
+    if(shooterState.shooting) return;
+    updateAim(e.clientX, e.clientY);
+    shootCandy();
   };
-  arena.ontouchmove = (e) => {
-    const rect=arena.getBoundingClientRect();
-    const touch = e.touches[0];
-    shooterState.cannonX = ((touch.clientX-rect.left)/rect.width)*100;
-    document.getElementById('cannon').style.left = shooterState.cannonX+'%';
-    e.preventDefault();
-  };
-  arena.onclick = shootCannon;
+  arena.ontouchend = (e) => { if(!shooterState.shooting) shootCandy(); };
 }
 
 function showShooterQuestion() {
@@ -1130,95 +1244,121 @@ function showShooterQuestion() {
     shooterState.active=false;
     finishGame(shooterState.correctCount,shooterState.pairs.length,shooterState.totalPoints); return;
   }
+  shooterState.shooting = false;
   const q = shooterState.pairs[shooterState.currentQ];
   document.getElementById('shooter-question').innerHTML = colorQuestion(q.a, q.b);
   document.getElementById('shooter-progress').style.width=(shooterState.currentQ/shooterState.pairs.length*100)+'%';
   document.getElementById('shooter-feedback').innerHTML='';
-  // Create falling answers
+  document.getElementById('aim-line').style.display='block';
+
   const arena = document.getElementById('shooter-arena');
-  arena.querySelectorAll('.falling-answer,.candy-bullet').forEach(e=>e.remove());
+  arena.querySelectorAll('.shooter-candy,.candy-bullet,.explode-particle').forEach(e=>e.remove());
+
   const answers = new Set([q.answer]);
-  while(answers.size<4){const w=q.answer+Math.floor(Math.random()*20)-10;if(w>0)answers.add(w);}
+  while(answers.size<4){const w=q.answer+Math.floor(Math.random()*20)-10;if(w>0&&w!==q.answer)answers.add(w);else if(answers.size<4)answers.add(q.answer+answers.size+1);}
   const cols = ['#F8BBD0','#E1BEE7','#BBDEFB','#B2DFDB'];
+  const candyEmojis = ['🍬','🍭','🍫','🧁'];
   shuffle([...answers]).forEach((val,i) => {
     const el = document.createElement('div');
-    el.className = 'falling-answer';
-    el.textContent = val;
+    el.className = 'shooter-candy';
+    el.innerHTML = `<span style="position:relative;z-index:1">${val}</span>`;
     el.dataset.value = val;
-    el.style.left = (10+i*22)+'%';
-    el.style.top = '-70px';
+    el.style.left = (8+i*24)+'%';
+    el.style.top = '30px';
     el.style.background = cols[i%4];
     el.style.color = 'var(--text)';
     arena.appendChild(el);
   });
-  shooterState.fallingAnswers = arena.querySelectorAll('.falling-answer');
-  animateFalling(q);
 }
 
-function animateFalling(q) {
-  let startTime = Date.now();
-  const duration = 8000;
+function shootCandy() {
+  if(!shooterState.active || shooterState.shooting) return;
+  shooterState.shooting = true;
   const arena = document.getElementById('shooter-arena');
-  const arenaH = arena.offsetHeight;
-  function frame() {
-    if(!shooterState.active) return;
-    const elapsed = Date.now()-startTime;
-    const pct = Math.min(elapsed/duration, 1);
-    shooterState.fallingAnswers.forEach(el => {
-      if(el.dataset.hit) return;
-      el.style.top = (-70 + pct*(arenaH+70))+'px';
-    });
-    if(pct>=1) {
-      // Time's up for this question
-      updateMastery(q.a,q.b,false);
-      shooterState.currentQ++;
-      setTimeout(()=>showShooterQuestion(),500);
-      return;
-    }
-    window._gameRAF = requestAnimationFrame(frame);
-  }
-  window._gameRAF = requestAnimationFrame(frame);
-}
+  const arenaRect = arena.getBoundingClientRect();
+  const angleRad = shooterState.aimAngle * (Math.PI/180);
 
-function shootCannon() {
-  const arena = document.getElementById('shooter-arena');
   const bullet = document.createElement('div');
   bullet.className = 'candy-bullet';
-  bullet.textContent = '🍭';
-  bullet.style.left = shooterState.cannonX+'%';
-  bullet.style.bottom = '50px';
+  bullet.textContent = '🍬';
+  const startX = arenaRect.width/2;
+  const startY = arenaRect.height - 90;
+  bullet.style.left = startX+'px';
+  bullet.style.top = startY+'px';
   arena.appendChild(bullet);
-  // Animate bullet up
-  let y = 50;
+
+  let bx = startX, by = startY;
+  const speed = 10;
+  const dx = Math.sin(angleRad)*speed;
+  const dy = -Math.cos(angleRad)*speed;
   const q = shooterState.pairs[shooterState.currentQ];
+  const candies = arena.querySelectorAll('.shooter-candy');
+
   const iv = setInterval(() => {
-    y += 8;
-    bullet.style.bottom = y+'px';
-    // Check collision with falling answers
+    bx += dx; by += dy;
+    bullet.style.left = bx+'px';
+    bullet.style.top = by+'px';
+
     const bRect = bullet.getBoundingClientRect();
-    shooterState.fallingAnswers.forEach(el => {
+    let hitSomething = false;
+    candies.forEach(el => {
       if(el.dataset.hit) return;
       const eRect = el.getBoundingClientRect();
       if(bRect.left<eRect.right && bRect.right>eRect.left && bRect.top<eRect.bottom && bRect.bottom>eRect.top) {
         el.dataset.hit='true';
+        hitSomething = true;
         const val = parseInt(el.dataset.value);
         if(val === q.answer) {
-          el.style.background='var(--success)';
+          explodeCandy(el, arena);
           showConfetti();
           const pts=10;shooterState.correctCount++;shooterState.totalPoints+=pts;addPoints(pts);
           updateMastery(q.a,q.b,true);
-          if(window._gameRAF)cancelAnimationFrame(window._gameRAF);
+          document.getElementById('aim-line').style.display='none';
           document.getElementById('shooter-feedback').innerHTML=`
-            <div class="feedback-text correct-text">פגיעה! 🎉 +${pts}</div>
-            <button class="btn btn-next" onclick="shooterState.currentQ++;showShooterQuestion()">הבא ←</button>`;
+            <div class="feedback-text correct-text">פגיעה! 🎉 +${pts}</div>`;
+          setTimeout(()=>{ shooterState.currentQ++; showShooterQuestion(); }, 1200);
         } else {
           el.style.opacity='0.3';
+          el.style.transform='scale(0.8)';
+          shooterState.shooting = false;
         }
         bullet.remove(); clearInterval(iv);
       }
     });
-    if(y > arena.offsetHeight) { bullet.remove(); clearInterval(iv); }
-  }, 20);
+
+    if(!hitSomething && (by < -30 || bx < -30 || bx > arenaRect.width+30)) {
+      bullet.remove(); clearInterval(iv);
+      shooterState.shooting = false;
+    }
+  }, 16);
+}
+
+function explodeCandy(el, arena) {
+  const rect = el.getBoundingClientRect();
+  const arenaRect = arena.getBoundingClientRect();
+  const cx = rect.left - arenaRect.left + rect.width/2;
+  const cy = rect.top - arenaRect.top + rect.height/2;
+  const colors = ['#F8BBD0','#E1BEE7','#BBDEFB','#B2DFDB','#FFD700','#FF6B6B'];
+  for(let i=0;i<8;i++) {
+    const p = document.createElement('div');
+    p.className = 'explode-particle';
+    p.style.left = cx+'px';
+    p.style.top = cy+'px';
+    p.style.background = colors[i%colors.length];
+    const angle = (i/8)*Math.PI*2;
+    const dist = 40+Math.random()*40;
+    const tx = Math.cos(angle)*dist;
+    const ty = Math.sin(angle)*dist;
+    p.style.transition = 'transform 0.5s ease-out, opacity 0.5s ease-out';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      p.style.transform = `translate(${tx}px,${ty}px) scale(0)`;
+      p.style.opacity = '0';
+    }));
+    arena.appendChild(p);
+    setTimeout(()=>p.remove(), 700);
+  }
+  el.classList.add('candy-exploding');
+  setTimeout(()=>el.remove(), 500);
 }
 
 // ===== 5. FILL TABLE =====
@@ -1226,7 +1366,7 @@ let tableState = {};
 function startFillTable(tables) {
   const size = tables.length >= 8 ? 6 : 5;
   const rows = shuffle([...tables]).slice(0,size);
-  const cols = shuffle([2,3,4,5,6,7,8,9,10]).slice(0,size);
+  const cols = shuffle(getMultipliers()).slice(0,size);
   const emptyCells = [];
   const grid = [];
   for(let r=0;r<rows.length;r++) {
@@ -1404,7 +1544,7 @@ function startRace(tables) {
 
 function nextRaceQuestion() {
   const a=raceState.tables[Math.floor(Math.random()*raceState.tables.length)];
-  const b=Math.floor(Math.random()*9)+2;
+  const m=getMultipliers(); const b=m[Math.floor(Math.random()*m.length)];
   raceState.currentQ={a,b,answer:a*b};
   document.getElementById('race-question').innerHTML=colorQuestion(a,b);
   document.getElementById('race-input').value='';
@@ -1432,12 +1572,27 @@ function submitRaceAnswer() {
 
 // ===== 8. PUZZLE =====
 let puzzleState = {};
+function getRandomCapyImage() {
+  const allPoseKeys = ['correct1','correct2','correct3','correct4','correct5','correct6','correct7','wrong1','wrong2','wrong3','hub','thinking','shop','report'];
+  const available = allPoseKeys.filter(k => mediaCache[`capyPose_${k}`]);
+  if(available.length === 0) return null;
+  return mediaCache[`capyPose_${available[Math.floor(Math.random()*available.length)]}`];
+}
+
 function startPuzzle(tables) {
   const pairs = generatePairs(tables, 9);
-  // Capybara puzzle pieces (emojis forming a picture)
   const pieces = ['🌿','🌸','☀️','🐹','💕','🌊','🦋','🌈','⭐'];
-  puzzleState = {pairs,currentQ:0,revealed:[],totalPoints:0,pieces};
+  const bgImage = getRandomCapyImage();
+  puzzleState = {pairs,currentQ:0,revealed:[],totalPoints:0,pieces,bgImage,pieceRatio:1};
   showScreen('puzzle-screen');
+  if(bgImage) {
+    const img = new Image();
+    img.onload = () => {
+      puzzleState.pieceRatio = (img.naturalHeight / img.naturalWidth);
+      renderPuzzleGrid();
+    };
+    img.src = bgImage;
+  }
   renderPuzzleGrid();
   showPuzzleQuestion();
 }
@@ -1445,11 +1600,23 @@ function startPuzzle(tables) {
 function renderPuzzleGrid() {
   const grid=document.getElementById('puzzle-grid');
   grid.innerHTML='';
+  const ratio = puzzleState.pieceRatio || 1;
+  grid.style.setProperty('--piece-ratio', `3 / ${(3 * ratio).toFixed(2)}`);
   puzzleState.pieces.forEach((emoji,i)=>{
     const el=document.createElement('div');
     const isRevealed=puzzleState.revealed.includes(i);
-    el.className='puzzle-piece'+(isRevealed?' revealed':' hidden');
-    if(isRevealed) el.textContent=emoji;
+    const col=i%3, row=Math.floor(i/3);
+    if(isRevealed && puzzleState.bgImage) {
+      el.className='puzzle-piece revealed';
+      el.style.backgroundImage=`url(${puzzleState.bgImage})`;
+      el.style.backgroundSize='300% 300%';
+      el.style.backgroundPosition=`${col*50}% ${row*50}%`;
+    } else if(isRevealed) {
+      el.className='puzzle-piece revealed no-image';
+      el.textContent=emoji;
+    } else {
+      el.className='puzzle-piece hidden';
+    }
     grid.appendChild(el);
   });
 }
@@ -1544,8 +1711,7 @@ function renderShop() {
 document.addEventListener('keydown',(e)=>{
   if(e.key==='Enter') {
     const active=document.querySelector('.screen.active');
-    if(active?.id==='quiz-screen'&&!document.getElementById('answer-input').disabled) submitTypedAnswer();
-    else if(active?.id==='race-screen') submitRaceAnswer();
+    if(active?.id==='race-screen') submitRaceAnswer();
     else if(active?.id==='table-screen') submitTableAnswer();
     else if(active?.id==='puzzle-screen') submitPuzzleAnswer();
     else if(active?.id==='welcome-screen') startGame();
@@ -1591,236 +1757,12 @@ async function clearAllMedia() {
   });
 }
 
-// ===== AI CAPYBARA =====
-const GOOGLE_API_KEY = 'AIzaSyDMDvP1wPKjAJxaFalXNKlK8qC1tHLICXU';
-const IMAGE_STYLES = [
-  {name:'פיקסאר',prompt:'Pixar 3D animated style, cute round'},
-  {name:'אנימה',prompt:'anime style, big eyes, kawaii'},
-  {name:'קריקטורה',prompt:'cartoon style, bold outlines, funny'},
-  {name:'צבעי מים',prompt:'watercolor painting, soft, artistic'},
-  {name:'ריאליסטי',prompt:'photorealistic, lifelike, natural'},
-  {name:'פרוותי',prompt:'fluffy furry style, soft fur, adorable'},
-  {name:'רטרו',prompt:'retro pixel art style, 8-bit, cute'},
-  {name:'פנטזיה',prompt:'fantasy style, magical, sparkles, fairy tale'},
-  {name:'פופ ארט',prompt:'pop art style, bold colors, Andy Warhol inspired'},
-  {name:'ציור שמן',prompt:'oil painting style, classic, museum quality'}
-];
-const CAPY_POSES = [
-  {key:'hub', prompt:'standing and smiling, front facing, friendly pose'},
-  {key:'correct1', prompt:'jumping with joy, arms up, celebrating'},
-  {key:'correct2', prompt:'giving thumbs up, big smile, proud'},
-  {key:'correct3', prompt:'clapping hands, excited, cheerful'},
-  {key:'correct4', prompt:'wearing a gold medal, champion pose'},
-  {key:'correct5', prompt:'surrounded by stars and sparkles, magical'},
-  {key:'correct6', prompt:'doing a victory dance, one leg up'},
-  {key:'correct7', prompt:'holding a trophy, triumphant'},
-  {key:'wrong1', prompt:'looking sad, tears in eyes, disappointed'},
-  {key:'wrong2', prompt:'scratching head, confused, thinking'},
-  {key:'wrong3', prompt:'shrugging, oops expression, surprised'},
-  {key:'thinking', prompt:'wearing glasses, reading a book, studious'},
-  {key:'loading', prompt:'running fast, motion blur, energetic'},
-  {key:'shop', prompt:'wearing a top hat, fancy, surrounded by gifts'},
-  {key:'report', prompt:'wearing graduation cap, holding diploma, proud'}
-];
-const VIDEO_ACTIONS = [
-  {name:'רוקד',prompt:'dancing happily, joyful dance moves'},
-  {name:'ברייקדנס',prompt:'breakdancing, spinning on the floor, hip hop moves'},
-  {name:'קופץ',prompt:'jumping with joy, bouncing up and down excitedly'},
-  {name:'זורק קונפטי',prompt:'throwing confetti in the air, celebrating'},
-  {name:'בוכה',prompt:'crying sadly, tears falling, looking down'},
-  {name:'חיבוק',prompt:'giving a warm hug, arms open wide'},
-  {name:'מנופף',prompt:'waving hello, friendly wave'},
-  {name:'מסתובב',prompt:'spinning around in circles, dizzy and happy'},
-  {name:'יושב עצוב',prompt:'sitting down sadly, looking disappointed'},
-  {name:'כוכב',prompt:'doing a star pose, arms and legs spread, triumphant'}
-];
-
-let capyImages = []; // base64 images from Imagen
-let selectedCapyIndex = -1;
-
-async function generateCapyImages() {
-  const desc = document.getElementById('capy-desc-input').value.trim();
-  const userDesc = desc || 'a cute capybara';
-  const statusEl = document.getElementById('capy-gen-status');
-  const textEl = document.getElementById('capy-gen-text');
-  statusEl.style.display = 'block';
-  capyImages = new Array(IMAGE_STYLES.length).fill(null);
-  let completed = 0;
-
-  // Generate in batches of 3
-  for(let batch = 0; batch < IMAGE_STYLES.length; batch += 3) {
-    const batchStyles = IMAGE_STYLES.slice(batch, batch + 3);
-    const names = batchStyles.map(s => s.name).join(', ');
-    textEl.textContent = `מציירת קפיברות ${batch+1}-${Math.min(batch+3, IMAGE_STYLES.length)}/10 (${names})...`;
-
-    const promises = batchStyles.map(async (style, j) => {
-      const idx = batch + j;
-      try {
-        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict`, {
-          method: 'POST',
-          headers: {'Content-Type':'application/json','x-goog-api-key':GOOGLE_API_KEY},
-          body: JSON.stringify({
-            instances: [{prompt: `${style.prompt}, ${userDesc}, capybara character, white background, friendly`}],
-            parameters: {sampleCount: 1}
-          })
-        });
-        const data = await resp.json();
-        const b64 = data.predictions?.[0]?.bytesBase64Encoded || data.generatedImages?.[0]?.image?.imageBytes;
-        if(b64) capyImages[idx] = {style: style.name, base64: b64};
-        else console.warn('Imagen response format:', JSON.stringify(data).slice(0,200));
-      } catch(err) { console.error('Imagen error:', err); }
-    });
-
-    await Promise.all(promises);
-    completed += batchStyles.length;
-  }
-
-  statusEl.style.display = 'none';
-  showCapyImageGrid();
-}
-
-function showCapyImageGrid() {
-  const grid = document.getElementById('capy-image-grid');
-  grid.innerHTML = '';
-  capyImages.forEach((img, i) => {
-    if(!img) return;
-    const div = document.createElement('div');
-    div.className = 'image-option';
-    div.innerHTML = `<img src="data:image/png;base64,${img.base64}"><div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.85);padding:4px 12px;border-radius:20px;font-size:0.85em;font-weight:bold;">${img.style}</div>`;
-    div.style.position = 'relative';
-    div.onclick = () => {
-      document.querySelectorAll('.image-option').forEach(o=>o.classList.remove('selected'));
-      div.classList.add('selected');
-      selectedCapyIndex = i;
-      document.getElementById('capy-select-btn').style.display = 'inline-block';
-    };
-    grid.appendChild(div);
-  });
-  showScreen('capy-select-screen');
-}
-
-async function confirmCapyImage() {
-  if(selectedCapyIndex < 0) return;
-  const img = capyImages[selectedCapyIndex];
-  if(!img) return;
-
-  // Save the selected base image
-  const imgBlob = await fetch(`data:image/png;base64,${img.base64}`).then(r=>r.blob());
-  await saveMedia('capyImage', imgBlob);
-  state.hasAICapy = true;
-  state.capyStyle = img.style;
-  state.capyStylePrompt = IMAGE_STYLES[selectedCapyIndex].prompt;
-  state.capyDesc = document.getElementById('capy-desc-input').value.trim() || 'a cute capybara';
-  saveState();
-
-  // Generate pose images + videos
-  showScreen('capy-videos-screen');
-  await generateCapyPosesAndVideos(img.base64);
-}
-
-async function generateCapyPosesAndVideos(imageBase64) {
-  const progressBar = document.getElementById('video-progress-bar');
-  const progressText = document.getElementById('video-progress-text');
-  const genText = document.getElementById('video-gen-text');
-  const totalSteps = CAPY_POSES.length + VIDEO_ACTIONS.length;
-  let completed = 0;
-
-  const stylePrompt = state.capyStylePrompt || IMAGE_STYLES[0].prompt;
-  const userDesc = state.capyDesc || 'a cute capybara';
-
-  // Phase 1: Generate pose images (batches of 3)
-  genText.textContent = 'מציירת תמונות של הקפיברה...';
-  for(let batch = 0; batch < CAPY_POSES.length; batch += 3) {
-    const batchPoses = CAPY_POSES.slice(batch, batch + 3);
-    genText.textContent = `🖌️ תמונות ${batch+1}-${Math.min(batch+3, CAPY_POSES.length)}/${CAPY_POSES.length}...`;
-
-    const promises = batchPoses.map(async (pose) => {
-      try {
-        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict`, {
-          method: 'POST',
-          headers: {'Content-Type':'application/json','x-goog-api-key':GOOGLE_API_KEY},
-          body: JSON.stringify({
-            instances: [{prompt: `${stylePrompt}, ${userDesc}, capybara character, ${pose.prompt}, same character consistent style, white background`}],
-            parameters: {sampleCount: 1}
-          })
-        });
-        const data = await resp.json();
-        const b64 = data.predictions?.[0]?.bytesBase64Encoded || data.generatedImages?.[0]?.image?.imageBytes;
-        if(b64) {
-          const blob = await fetch(`data:image/png;base64,${b64}`).then(r=>r.blob());
-          await saveMedia(`capyPose_${pose.key}`, blob);
-        }
-      } catch(err) { console.error(`Pose ${pose.key} error:`, err); }
-    });
-
-    await Promise.all(promises);
-    completed += batchPoses.length;
-    updateGenProgress(completed, totalSteps, progressBar, progressText);
-  }
-
-  // Phase 2: Generate videos
-  genText.textContent = 'מייצרת סרטונים...';
-  for(let i = 0; i < VIDEO_ACTIONS.length; i++) {
-    const action = VIDEO_ACTIONS[i];
-    genText.textContent = `🎬 סרטון ${i+1}/${VIDEO_ACTIONS.length}: ${action.name}...`;
-    try {
-      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/veo-2.0-generate-001:predictLongRunning`, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json','x-goog-api-key':GOOGLE_API_KEY},
-        body: JSON.stringify({
-          instances: [{
-            prompt: `A cute capybara ${action.prompt}, short video, looping, fun animation`,
-            image: {bytesBase64Encoded: imageBase64, mimeType: 'image/png'}
-          }],
-          parameters: {aspectRatio:'9:16', durationSeconds: 5}
-        })
-      });
-      const opData = await resp.json();
-      const opName = opData.name;
-      if(!opName) { completed++; updateGenProgress(completed, totalSteps, progressBar, progressText); continue; }
-
-      for(let attempt = 0; attempt < 60; attempt++) {
-        await new Promise(r => setTimeout(r, 5000));
-        const pollResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/${opName}`, {
-          headers: {'x-goog-api-key': GOOGLE_API_KEY}
-        });
-        const pollData = await pollResp.json();
-        if(pollData.done) {
-          const videoUri = pollData.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri || pollData.response?.generatedSamples?.[0]?.video?.uri;
-          if(videoUri) {
-            const videoResp = await fetch(`${videoUri}&key=${GOOGLE_API_KEY}`);
-            const videoBlob = await videoResp.blob();
-            await saveMedia(`capyVideo_${i}`, videoBlob);
-          }
-          break;
-        }
-      }
-    } catch(err) { console.error(`Veo error ${action.name}:`, err); }
-    completed++;
-    updateGenProgress(completed, totalSteps, progressBar, progressText);
-  }
-
-  genText.textContent = 'הכל מוכן! 🎉';
-  setTimeout(() => showScreen('hub-screen'), 1500);
-}
-
-function updateGenProgress(n, total, bar, text) {
-  bar.style.width = (n/total*100)+'%';
-  text.textContent = `${n} / ${total}`;
-}
-
-function resetCapyStyle() {
-  showScreen('capy-desc-screen');
-}
-
+// ===== CAPYBARA MEDIA =====
 // ===== MEDIA URL CACHE =====
 const mediaCache = {};
 async function preloadMediaCache() {
   if(!state.hasAICapy) return;
-  const allKeys = [
-    ...['correct1','correct2','correct3','correct4','correct5','correct6','correct7','wrong1','wrong2','wrong3','hub','thinking','loading','shop','report'].map(k=>`capyPose_${k}`),
-    ...[0,1,2,3,4,5,6,7,8,9].map(i=>`capyVideo_${i}`)
-  ];
+  const allKeys = ['correct1','correct2','correct3','correct4','correct5','correct6','correct7','wrong1','wrong2','wrong3','hub','thinking','loading','shop','report'].map(k=>`capyPose_${k}`);
   for(const key of allKeys) {
     try {
       const blob = await getMedia(key);
@@ -1829,27 +1771,17 @@ async function preloadMediaCache() {
   }
 }
 
-// Get capybara feedback HTML (video > pose image > CSS fallback)
+// Get capybara feedback HTML (pose image or CSS fallback)
 function getCapyFeedbackHTML(type) {
   if(!state.hasAICapy) return Promise.resolve(type==='correct' ? CAPYBARA_HTML : SAD_CAPYBARA_HTML);
 
-  // Get a random pose image from cache
   const poseKeys = type === 'correct'
     ? shuffle(['correct1','correct2','correct3','correct4','correct5','correct6','correct7'])
     : shuffle(['wrong1','wrong2','wrong3']);
   let imgUrl = null;
   for(const k of poseKeys) { imgUrl = mediaCache[`capyPose_${k}`]; if(imgUrl) break; }
-  const imgTag = imgUrl ? `<img class="video-feedback" src="${imgUrl}" alt="קפיברה">` : (type==='correct' ? CAPYBARA_HTML : SAD_CAPYBARA_HTML);
-
-  // Get a random video from cache
-  const vidIndices = type === 'correct' ? shuffle([0,1,2,3,6,7,9]) : shuffle([4,8]);
-  let videoUrl = null;
-  for(const i of vidIndices) { videoUrl = mediaCache[`capyVideo_${i}`]; if(videoUrl) break; }
-
-  if(videoUrl) {
-    return Promise.resolve(`<div>${imgTag}<video class="video-feedback" style="display:none" src="${videoUrl}" autoplay loop muted playsinline onplay="this.style.display='block';this.previousElementSibling.style.display='none'" onerror="this.remove()"></video></div>`);
-  }
-  return Promise.resolve(imgTag);
+  if(imgUrl) return Promise.resolve(`<img class="video-feedback" src="${imgUrl}" alt="קפיברה">`);
+  return Promise.resolve(type==='correct' ? CAPYBARA_HTML : SAD_CAPYBARA_HTML);
 }
 
 // Get a random pose image URL (from cache)
