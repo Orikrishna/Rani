@@ -314,8 +314,12 @@ input:focus { border-color:var(--secondary); }
   <h1>משחק לוח הכפל!</h1>
   <p style="text-align:center;color:var(--text-light);">בואי נלמד את לוח הכפל יחד עם חברה חדשה!</p>
   <div class="card">
+    <label style="font-weight:bold;display:block;margin-bottom:8px;">מה השם שלך?</label>
+    <input type="text" id="player-name-input" placeholder="השם שלך..." maxlength="20">
+  </div>
+  <div class="card">
     <label style="font-weight:bold;display:block;margin-bottom:8px;">איך קוראים לקפיברה שלך?</label>
-    <input type="text" id="capy-name-input" placeholder="בחרי שם..." maxlength="20">
+    <input type="text" id="capy-name-input" placeholder="בחרי שם לקפיברה..." maxlength="20">
   </div>
   <div class="card">
     <label style="font-weight:bold;display:block;margin-bottom:12px;">בחרי צבעים:</label>
@@ -351,6 +355,7 @@ input:focus { border-color:var(--secondary); }
     <img id="hub-capy-img" class="capy-hub-img" style="display:none;" alt="הקפיברה שלי">
     <div class="capy-name" id="hub-capy-name"></div>
   </div>
+  <div class="capy-name" id="hub-player-name" style="text-align:center;font-size:1em;color:var(--text-light);margin-bottom:4px;"></div>
   <div class="points-display"><span>⭐</span><span id="hub-points">0</span><span>נקודות</span></div>
   <div class="number-pills" id="number-pills">
     <button class="number-pill pill-all selected" data-num="all" onclick="togglePill(this)">הכל</button>
@@ -378,6 +383,7 @@ input:focus { border-color:var(--secondary); }
   <div class="hub-buttons">
     <button class="btn btn-accent" onclick="showScreen('report-screen')">📊 תעודה</button>
     <button class="btn btn-secondary" onclick="showScreen('shop-screen')">🛍️ חנות</button>
+    <button class="btn btn-secondary" onclick="openSettings()">⚙️ הגדרות</button>
   </div>
 </div>
 
@@ -574,7 +580,7 @@ input:focus { border-color:var(--secondary); }
 <script>
 // ===== STATE =====
 const DEFAULT_STATE = {
-  capybaraName:'',colorPalette:'palette-rose',totalPoints:0,ownedItems:[],
+  playerName:'',capybaraName:'',colorPalette:'palette-rose',totalPoints:0,ownedItems:[],
   masteryGrid:{},
   stats:{totalQuestions:0,totalCorrect:0,totalFirstTry:0,longestStreak:0,bestRace:0}
 };
@@ -667,6 +673,14 @@ function updateMastery(a, b, correct) {
   saveState();
 }
 
+function getCheer() {
+  const name = state.playerName || '';
+  const cheers = name ? [
+    `נכון! 🎉`,`מעולה ${name}! 🎉`,`כל הכבוד ${name}! ⭐`,`נכון! 🎉`,`${name} מדהימה! 💪`,
+    `יופי ${name}! 🌟`,`נכון! 🎉`,`בול! ${name}! 🎯`,`${name} גאונה! 🧠`,`נכון! 🎉`
+  ] : [`נכון! 🎉`,`מעולה! 🎉`,`כל הכבוד! ⭐`,`יופי! 🌟`,`בול! 🎯`];
+  return cheers[Math.floor(Math.random()*cheers.length)];
+}
 function showConfetti() {
   confetti({particleCount:80,spread:70,origin:{y:0.6},colors:['#FFB6C1','#DDA0DD','#87CEEB','#98D8A0','#FFD700']});
 }
@@ -719,16 +733,29 @@ function selectPalette(btn) {
   document.body.className = selectedPalette;
 }
 function startGame() {
-  const name = document.getElementById('capy-name-input').value.trim();
-  if(!name){document.getElementById('capy-name-input').style.borderColor='#E57373';return;}
-  state.capybaraName=name; state.colorPalette=selectedPalette; saveState();
+  const playerName = document.getElementById('player-name-input').value.trim();
+  const capyName = document.getElementById('capy-name-input').value.trim();
+  if(!playerName){document.getElementById('player-name-input').style.borderColor='#E57373';return;}
+  if(!capyName){document.getElementById('capy-name-input').style.borderColor='#E57373';return;}
+  state.playerName=playerName; state.capybaraName=capyName; state.colorPalette=selectedPalette; saveState();
   document.body.className=selectedPalette;
   showScreen('hub-screen');
+}
+function openSettings() {
+  document.getElementById('player-name-input').value = state.playerName || '';
+  document.getElementById('capy-name-input').value = state.capybaraName || '';
+  // Select current palette
+  document.querySelectorAll('.palette-option').forEach(b => {
+    b.classList.toggle('selected', b.dataset.palette === state.colorPalette);
+  });
+  selectedPalette = state.colorPalette;
+  showScreen('welcome-screen');
 }
 // ===== HUB =====
 function renderHub() {
   document.body.className = state.colorPalette;
   document.getElementById('hub-capy-name').textContent = state.capybaraName;
+  document.getElementById('hub-player-name').textContent = state.playerName ? `שלום ${state.playerName}! 👋` : '';
   document.getElementById('hub-points').textContent = state.totalPoints;
   SHOP_ITEMS.forEach(item => {
     const el = document.getElementById(item.accessoryId);
@@ -872,7 +899,7 @@ function checkQuizAnswer(answer, btnEl) {
     const fact=getCapyFact();
     getCapyFeedbackHTML('correct').then(capyHTML => {
       document.getElementById('feedback-area').innerHTML=`
-        ${capyHTML}<div class="feedback-text correct-text">נכון! 🎉</div>
+        ${capyHTML}<div class="feedback-text correct-text">${getCheer()}</div>
         <div class="points-earned">+${pts} נקודות${mult>1?` (x${mult} בונוס!)`:''}</div>
         <div class="capybara-fact">🐹 <strong>עובדה:</strong> ${fact}</div>
         <button class="btn btn-next" onclick="nextQuizQuestion()">השאלה הבאה ←</button>`;
@@ -896,7 +923,8 @@ function nextQuizQuestion() {
 function finishGame(correct, total, totalPts) {
   const pct=correct/total; const stars=pct>=0.9?3:pct>=0.7?2:1;
   document.getElementById('complete-stars').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);
-  document.getElementById('complete-score').textContent=`ענית נכון ${correct} מתוך ${total}!`;
+  const name = state.playerName;
+  document.getElementById('complete-score').textContent = name ? `${name}, ענית נכון ${correct} מתוך ${total}!` : `ענית נכון ${correct} מתוך ${total}!`;
   document.getElementById('complete-points-earned').textContent=`+${totalPts} נקודות!`;
   showScreen('complete-screen'); bigConfetti();
 }
@@ -1315,7 +1343,7 @@ function shootCandy() {
           updateMastery(q.a,q.b,true);
           document.getElementById('aim-line').style.display='none';
           document.getElementById('shooter-feedback').innerHTML=`
-            <div class="feedback-text correct-text">פגיעה! 🎉 +${pts}</div>`;
+            <div class="feedback-text correct-text">${getCheer()} +${pts}</div>`;
           setTimeout(()=>{ shooterState.currentQ++; showShooterQuestion(); }, 1200);
         } else {
           el.style.opacity='0.3';
@@ -1651,7 +1679,7 @@ function submitPuzzleAnswer() {
     puzzleState.currentQ++;
     const fact=getCapyFact();
     document.getElementById('puzzle-feedback').innerHTML=`
-      <div class="feedback-text correct-text">נכון! 🎉 +${pts}</div>
+      <div class="feedback-text correct-text">${getCheer()} +${pts}</div>
       <div class="capybara-fact">🐹 ${fact}</div>
       <button class="btn btn-next" onclick="showPuzzleQuestion()">הבא ←</button>`;
   } else {
