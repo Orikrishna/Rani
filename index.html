@@ -451,7 +451,7 @@ input:focus { border-color:var(--secondary); }
   <div style="overflow-x:auto;"><table class="fill-table" id="fill-table"></table></div>
   <div class="table-input-area" id="table-input-area" style="display:none;">
     <span id="table-cell-label" style="font-weight:bold;font-size:1.2em;"></span>
-    <input type="number" id="table-answer" placeholder="?" inputmode="numeric" style="width:80px;">
+    <input type="number" id="table-answer" placeholder="?" readonly style="width:80px;">
     <button class="btn btn-primary" onclick="submitTableAnswer()" style="padding:10px 20px;">✓</button>
   </div>
   <div class="feedback-area" id="table-feedback"></div>
@@ -487,7 +487,7 @@ input:focus { border-color:var(--secondary); }
   <div class="race-track"><div class="race-runner" id="race-runner">🐹</div></div>
   <div class="question-display" id="race-question"></div>
   <div class="race-input">
-    <input type="number" id="race-input" placeholder="תשובה..." inputmode="numeric">
+    <input type="number" id="race-input" placeholder="תשובה..." readonly>
     <button class="btn btn-primary" onclick="submitRaceAnswer()" style="padding:14px 24px;">→</button>
   </div>
   <div class="feedback-area" id="race-feedback"></div>
@@ -516,7 +516,7 @@ input:focus { border-color:var(--secondary); }
     <div class="puzzle-grid" id="puzzle-grid"></div>
     <div class="puzzle-controls">
       <div class="answer-input-row">
-        <input type="number" id="puzzle-input" placeholder="תשובה..." inputmode="numeric">
+        <input type="number" id="puzzle-input" placeholder="תשובה..." readonly>
         <button class="btn btn-primary" onclick="submitPuzzleAnswer()">שלחי</button>
       </div>
       <div class="numpad">
